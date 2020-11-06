@@ -1,0 +1,83 @@
+{% extends "template.html" %}
+{% block content %}
+<title>Trolligarchian Stock Market - Admin Panel</title>
+{% if mess %}
+  <div class="notification is-success">
+    {{mess}}
+  </div>
+{% endif %}
+{% if errMess %}
+  <div class="notification is-danger">
+    {{errMess}}
+  </div>
+{% endif  %}
+<div class="box is-multiline" style="display: inline-block">
+  <h4>User Controls</h4>
+  <div class="box is-multiline">
+    <form method="POST">
+      <p>Add A User</p><br>
+      Username:<br>
+      <input type="text" name="newUName"><br>
+      Users Password:<br>
+      <input type="password" name="newPWord"><br>
+      User Level:<br>
+      <input type="list" list="userLevels" name="uLevel"><br>
+      <datalist id="userLevels">
+        <option value="Admin">
+        <option value="User">
+      </datalist>
+      Discord ID:<br>
+      <input type="text" name="discID"><br>
+      <input type="hidden" name="addU">
+      <input type="submit" class="button" value="Add User">
+    </form>
+  </div>
+  <div class="box is-multiline">
+    <form method="POST">
+      <p>Change A Users Password</p><br>
+      User's ID:<br>
+      <input type="number" name="uID"><br>
+      New Password:<br>
+      <input type="password" name="newPWord"><br>
+      <input type="hidden" name="changePass">
+      <input type="submit" class="button" value="Change Users Passwords">
+    </form>
+  </div>
+    <div class="box is-multiline">
+    <form method="POST">
+      <p>Delete a user</p><br>
+      User's ID:<br>
+      <input type="number" name="uID"><br>
+      <input type="hidden" name="remUser">
+      <input type="submit" class="button is-danger" value="Delete User">
+    </form>
+  </div>
+</div>
+<div class="box is-multiline" style="display: inline-block">
+  <h4>Stock Controls</h4>
+  <div class="box is-multiline"">
+    <form method="POST">
+      <p>Add a New Stock</p><br>
+      Stock Ticker:<br>
+      <input type="text" name="newTick" maxlength="5" required><br>
+      Company Name:<br>
+      <input type="text" name="newName" required><br>
+      Volume of Stock:<br>
+      <input type="number" name="newVol" required><br>
+      Opening Price of Stock:<br>
+      <input type="number" name="openPrice" required><br>
+      <input type="hidden" name="tickerAdd">
+      <input type="submit" class="button" value="Add Stock">
+    </form>
+  </div>
+  <div class="box is-multiline">
+    <form method="POST">
+      <p>Remove A Stock</p><br>
+      Stock To Remove's Ticker:<br>
+      <input type="text" name="tickerDrop" required><br>
+      <input type="hidden" name="tickerDelete">
+      <input type="submit" class="button is-danger" value="Delete Stock">
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "template.html" %}
+{% block content %}
+<title>Trolligarchian Stock Market - Homepage</title>
+<div class="block">
+  <h3>Welcome to the Stock Market</h3><br>
+  <p>This is a stock and bond trading interface for Danyo's Discord Server Democracy thing. It is used for trading stocks listed in the Trolligarch Stock Market and bonds issued by the Trolligarchian Government.</p>
+</div>
+<br><br>
+{% if message %}
+<div class="box is-multiline">
+  <h4><strong>Message From Person What Made This</strong></h4>
+  <p>{{message}}</p>
+</div>
+{% endif %}
+{% endblock %}

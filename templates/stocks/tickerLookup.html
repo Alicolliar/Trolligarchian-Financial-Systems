@@ -1,0 +1,28 @@
+{% extends "template.html" %}
+{% block content %}
+<title>Trolligarchian Stock Market - Ticker Lookup</title>
+<div class="block">
+  <h3>Trolligarchian Ticker Lookup
+  <form method="POST">
+    Select the metric to search:<br>
+    <select name="metric">
+      <option value="ticker" selected>Ticker</option>
+      <option value="priceg">Prices <i>greater</i> than</option>
+      <option value="pricel">Prices <i>less</i> than</option>
+      <option value="voll">Volumes <i>less</i> than</option>
+      <option value="volg">Volumes <i>greater</i> than</option>
+    </select><br>
+    Value to Search for:<br>
+    <input type="text" name="value"><br><br>
+    <input type="submit" class="button is-link" value="Find Stocks">
+  </form>
+  {% for data in datas %}
+  <div class="box is-multiline">
+    <p>Ticker: <strong>{{data[0]}}</strong></p>
+    <p>Name: <strong>{{data[1]}}</strong></p>
+    <p>Current Stock Price: <strong>{{data[2]}}</strong></p>
+    <p>Tradeable Volume: <strong>{{data[3]}}</strong></p>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

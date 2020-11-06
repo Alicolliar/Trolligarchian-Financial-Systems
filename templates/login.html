@@ -1,0 +1,28 @@
+{% extends "template.html" %}
+{% block content %}
+<title>Trolligarchian Stock Market - Trader Login</title>
+<form class="form" method="post">
+  {% if errMess %}
+    <div class="notification is-danger">
+      {{errMess}}
+    </div>
+  {% endif %}
+  <h2><strong>Login</strong></h2>
+  <div class="field">
+    <label class="label">Username</label>
+    <div class="control">
+      <input class="input" type="text" name="uname" placeholder="Username" maxlength="35">
+    </div>
+  </div>
+  <div class="field">
+    <label class="label">Password</label>
+    <div class="control">
+      <input class="input" type="password" name="pwd" placeholder="Password" maxlength="35">
+    </div>
+  </div>
+  <div class="field">
+    <div class="control">
+      <input class="button" type="submit" placeholder="Login">
+    </div>
+  </form>
+{% endblock %}

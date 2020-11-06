@@ -1,0 +1,52 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta name="Author" content="Aligallaton, the one person who'll ever use this bloody thing">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script defer src="https://use.fontawesome.com/releases/v5.14.0/js/all.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.0/css/bulma.min.css">
+    <link rel="stylesheet" href="{{url_for('static', filename='css/eStyles.css')}}">
+  </head>
+  <body>
+    <header>
+      <h1 class="title">Trolligarch's Stock Market</h1>
+    </header>
+    <nav class="navbar" role="navigation">
+      <div class="navbar-menu">
+        <div class="navbar-start">
+          <a class="navbar-item" href="{{url_for('home')}}">Homepage</a>
+          <div class="navbar-item has-dropdown is-hoverable">
+            <a class="navbar-link">Stock Trading</a>
+            <div class="navbar-dropdown">
+              <a class="navbar-item" href="{{url_for('lookup')}}">Ticker Lookup</a>
+              <a class="navbar-item" href="{{url_for('stocklogin')}}">Trader Login</a>
+            </div>
+          </div>
+          <div class="navbar-item has-dropdown is-hoverable">
+            <a class="navbar-link">Bond Trading</a>
+            <div class="navbar-dropdown">
+              <a class="navbar-item">Return Calculator</a>
+              <a class="navbar-item">Trader Login</a>
+            </div>
+          </div>
+        </div>
+        <div class="navbar-end">
+          <div class="navbar-item">
+            <div class="buttons">
+              <a class="button is-primary" href="{{url_for('adminPans')}}">Admin Log In</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+    <main>
+      {% block content %}
+      {% endblock %}
+    </main>
+    <footer class="footer">
+      <div class="content has-text-centered">
+        <p>An Aligallaton Production</p>
+      </div>
+    </footer>
+  </body>
+</html>

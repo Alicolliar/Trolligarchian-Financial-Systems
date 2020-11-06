@@ -1,0 +1,25 @@
+{% extends "template.html" %}
+{% block content %}
+<title>Trolligarchian Stock Market - Stock Trading Page</title>
+<div class="block">
+  {% if notif %}
+  <div class="notification">
+    <p>{{notif}}</p>
+  </div>
+  {% endif %}
+  <form class="form" method="post">
+    Stock ticker to buy:<br>
+    <input type="text" name="ticker" placeholder="ABC" required><br>
+    Trade Type:<br>
+    <input type="list" list="tradeTypes" name="tType"><br>
+    <datalist id="tradeTypes">
+      <option value="Buy"></option>
+      <option value="Sell"></option>
+    </datalist>
+    Number of stock:<br>
+    <input type="number" name="numStock" value="1" min="0" required><br><br>
+    <input type="submit" class="button" value="Purchase Stocks" required><br><br>
+    <p style="font-size: 50%;"><b>The 5% tax is automatically included</b></p>
+  </form>
+</div>
+{% endblock %}
