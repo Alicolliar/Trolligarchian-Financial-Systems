@@ -1,7 +1,7 @@
 # Trolligarchian Financial Systems
 ### Financial fun for the whole family, if your family happen to be monsters
 
-#### Current Version: 1.0.0
+#### Current Version: 1.0.1
 ## Overview
 This was a follow-up to the other one. Except this is better in every single way. Find it here: http://troligarchmarkets.ga
 

@@ -114,7 +114,9 @@ def trading():
                     return render_template("stocks/tradePage.html", notif=note)
                 preVAT = float(price[0]) * float(quant)
                 postVAT = round((preVAT * 1.05), 2)
+                vat = round((preVAT*0.05), 0)
                 priceforFire = (0-postVAT)
+                dataRish = {'cash': vat, 'bank': 0}
                 data1 = {'cash': 0, 'bank': priceforFire}
                 newVol = int(price[1]) - int(quant)
                 priceAdj = int(price[0])*(int(quant)/int(price[2]))
@@ -136,7 +138,9 @@ def trading():
                     return render_template("stocks/tradePage.html", notif=notif)
                 preVAT = float(price[0]) * float(quant)
                 postVAT = round((preVAT * 1.05), 2)
+                vat = -1*round((preVAT*0.05), 0)
                 priceforFire = (postVAT)
+                dataRish = {'cash': vat, 'bank': 0}
                 data1 = {'cash': 0, 'bank': priceforFire}
                 newVol = int(price[1]) + int(quant)
                 priceAdj = int(price[0])*(int(quant)/int(price[2]))
@@ -151,9 +155,10 @@ def trading():
             cursor.execute(query2)
             cursor.execute(query3)
             cursor.execute(query4)
+            rishiURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/"
             runningURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/"+str(discID)
+            rishi = request.patch(rishiURL, headers=authParams, json=dataRish)
             running = requests.patch(runningURL, headers=authParams, json=data1)
-            print(running)
             db.commit()
             return render_template("stocks/tradePage.html", notif=notification)
 
