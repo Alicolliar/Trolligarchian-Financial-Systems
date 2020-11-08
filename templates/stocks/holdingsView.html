@@ -1,0 +1,21 @@
+{% extends "template.html" %}
+{% block content %}
+<title>Trolligarchian Stock Market - {{users}} Holdings</title>
+<div class="block">
+  <h3>{{users}}'s Holdings</h3>
+  {% if holds %}
+    {% for hold in holds %}
+      <div class="box is-multiline">
+        <p>Ticker: {{hold[0]}}<br>
+        Quantity owned: {{hold[1]}}<br>
+        Current Stock Price: {{hold[2]}}<br>
+        Total Value: {{hold[3]}}<br></p>
+      </div>
+    {% endfor %}
+    <br><br>
+  {% else %}
+    <h5>You don't own any stock. You can buy some <a href="{{url_for('trading')}}">here</a></h5>
+  {% endif %}
+  <h4><b>Total Value: £{{valTot}}</b></h4>
+</div>
+{% endblock %}

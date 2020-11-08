@@ -5,13 +5,13 @@ import threading
 from random import uniform
 from datetime import datetime
 db = sql.connect(
-    host="databasehost",
-    user="databaseusername",
-    password="databasepassword",
-    db="database")
+    host="###databaseadress###",
+    user="###databaseuser",
+    password="###databasepassword",
+    db="###database")
 app = Flask(__name__)
-app.secret_key = "###AN_IMAGINATIVE_SECRET_KEY###"
-authParams = {"Authorization":"###YOUR_UNBELIEVABOAT_API_TOKENY_KEY_THING###"}
+app.secret_key = "###secret_key###"
+authParams = {"Authorization":"###unbelieva_key###"}
 
 def priceMoves():
     threading.Timer(600.0, priceMoves).start()
@@ -33,11 +33,12 @@ def priceMoves():
             recordQuery = "INSERT INTO pricemoves (ticker ,timeStamped, newPrice) VALUES ('"+str(tick)+"','"+str(dt_string)+"', '"+str(newPrice)+"');"
             cursor.execute(updateQuery)
             cursor.execute(recordQuery)
+            cursor.close()
         db.commit()
 
 @app.route('/')
 def home():
-    message = "Testing, testing"
+    message = "There is some cool stuff here. Try the site on your phone now!"
     return render_template("home.html", message=message)
 
 @app.route('/stocklookup', methods=['GET', 'POST'])
@@ -61,6 +62,7 @@ def lookup():
             cursor.execute(query, data)
             db.commit()
             foundStuff = cursor.fetchall()
+            cursor.close()
         print(foundStuff)
         return render_template("stocks/tickerLookup.html", datas=foundStuff)
     return render_template("stocks/tickerLookup.html")
@@ -78,6 +80,7 @@ def stocklogin():
             cursor.execute(query, uname)
             db.commit()
             gubbins = cursor.fetchone()
+            cursor.close()
             print(gubbins)
         if not gubbins:
             return render_template("login.html", errMess="Incorrect Username, please try again")
@@ -160,12 +163,64 @@ def trading():
             rishi = request.patch(rishiURL, headers=authParams, json=dataRish)
             running = requests.patch(runningURL, headers=authParams, json=data1)
             db.commit()
+            cursor.close()
             return render_template("stocks/tradePage.html", notif=notification)
 
         return render_template("stocks/tradePage.html")
     else:
         redirect(url_for("stocklogin"))
 
+@app.route('/holdLogin', methods=['GET', 'POST']) ##DONE FOR NOW
+def holdingsLogin():
+    if 'uName' in session or 'adminP' in session:
+        return redirect(url_for("holdings"))
+    if request.method == "POST":
+        data = request.form
+        uname = data["uname"]
+        pword = data["pwd"]
+        query = "SELECT uID, pWord, discID FROM users WHERE uName = %s"
+        with db.cursor() as cursor:
+            cursor.execute(query, uname)
+            db.commit()
+            gubbins = cursor.fetchone()
+            cursor.close()
+            print(gubbins)
+        if not gubbins:
+            return render_template("login.html", errMess="Incorrect Username, please try again")
+        if pword == gubbins[1]:
+            session['uName'] = uname
+            session['uID'] = gubbins[0]
+            session['discID'] = gubbins[2]
+            return redirect(url_for("holdings"))
+    return render_template("login.html")
+
+@app.route('/personalHoldings')
+def holdings():
+    if 'uName' not in session and 'adminP' not in session:
+        return redirect(url_for("holdingsLogin"))
+    uID = session['uID']
+    user = session["uName"]
+    query = "SELECT ticker, quant FROM holdings WHERE uID = '"+str(uID)+"';"
+    totVal = 0
+    with db.cursor() as cursor:
+        cursor.execute(query)
+        holds = cursor.fetchall()
+        holds = list(holds)
+        print(holds)
+        for i in holds:
+            i = list(i)
+            tickBoi = i[0]
+            repetQuery = "SELECT curPrice FROM stocks WHERE ticker = '"+str(tickBoi)+"';"
+            cursor.execute(repetQuery)
+            price = cursor.fetchone()
+            price = list(price)
+            fullPrice = float(price[0]) * int(i[1])
+            print(fullPrice)
+            i.append(fullPrice)
+            totVal += fullPrice
+        totVal = round(totVal, 2)
+        cursor.close()
+    return render_template("stocks/holdingsView.html", holds=holds, users=user, valTot=totVal)
 
 @app.route('/adLogin', methods=['GET', 'POST']) ##DONE FOR NOW
 def adminlogin():
@@ -180,6 +235,7 @@ def adminlogin():
             cursor.execute(query, uname)
             db.commit()
             gubbins = cursor.fetchone()
+            cursor.close()
         if not gubbins:
             return render_template("login.html", errMess="Incorrect Username")
         if pword == gubbins[1]:
@@ -217,6 +273,7 @@ def adminPans():
                 db.commit()
                 cursor.execute(query2, uName)
                 pew = cursor.fetchone()
+                cursor.close()
                 print(pew)
             message = "User "+str(uName)+" added with ID "+str(pew[0])+"."
             return render_template("admin.html", mess=message)
@@ -231,6 +288,7 @@ def adminPans():
                     return render_template("admin.html", errMess="User Not Found. Please Check the User ID and Try Again.")
                 cursor.execute(actQuery)
                 db.commit()
+                cursor.close()
                 message = "User "+str(uID)+" removed."
                 return render_template("admin.html", mess=message)
         elif 'changePass' in data:
@@ -245,6 +303,7 @@ def adminPans():
                     return render_template("admin.html", errMess="User Not Found. Please Check the User ID and Try Again.")
                 cursor.execute(actQuery)
                 db.commit()
+                cursor.close()
                 message = str(uID)+" password succesfully changed."
                 return render_template("admin.html", mess=message)
         elif 'tickerAdd' in data:
@@ -261,9 +320,10 @@ def adminPans():
                     return render_template("admin.html", errMess="Stock Already Exists")
                 cursor.execute(addQuery)
                 db.commit()
+                cursor.close()
                 return render_template("admin.html", mess=str(new)+" added to the stock market.")
         elif 'tickerDelete' in data:
-            ticker = session["tickerDrop"]
+            ticker = data["tickerDrop"]
             findQuery = "SELECT companyName FROM stocks WHERE ticker = '"+str(ticker)+"';"
             delStockQuery = "DELETE FROM stocks WHERE ticker = '"+str(ticker)+"'"
             with db.cursor() as cursor:
@@ -273,11 +333,30 @@ def adminPans():
                     return render_template("admin.html", errMess="Stock not listed")
                 db.execute(delStockQuery)
                 db.commit()
+                cursor.close()
                 return render_template("admin.html", mess="Stock with ticker "+str(ticker)+" deleted and all holdings removed.")
+        elif 'stockChange' in data:
+            ticker = data['tickToChange']
+            option = data['fallDrop']
+            percentChange = data['percent']
+            if option == "Increase":
+                cang = 1 + (int(percentChange)/100)
+            else:
+                cang = 1- (int(percentChange)/100)
+            with db.cursor() as cursor:
+                print(cang)
+                queryTick = "SELECT curPrice FROM stocks WHERE ticker = '"+str(ticker)+"';"
+                cursor.execute(queryTick)
+                price = cursor.fetchone()
+                newPrice = cang * float(price[0])
+                newPrice = round(newPrice, 2)
+                newQuery = "UPDATE stocks SET curPrice = '"+str(newPrice)+"' WHERE ticker = '"+str(ticker)+"';"
+                cursor.execute(newQuery)
+                db.commit()
+                cursor.close()
+                mess = str(ticker)+" changed in price by "+str(percentChange)+"% to price £"+str(newPrice)+"."
 
-
-    return render_template("admin.html")
+    return render_template("admin.html", mess=mess)
 
 if __name__ == '__main__':
-    priceMoves()
-    app.run(debug=False)
+    app.run(debug=True)

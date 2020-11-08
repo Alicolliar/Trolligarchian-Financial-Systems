@@ -3,3 +3,15 @@ header {
   font-family: "Bodoni MT";
 }
 .box {width: fit-content;}
+#mobDrop {display: none;
+          width:100%
+}
+
+@media only screen and (max-width: 1000px) {
+    nav .navbar-menu {
+    display: none;
+  }
+  #mobDrop {
+    display: inline-block;
+  }
+}

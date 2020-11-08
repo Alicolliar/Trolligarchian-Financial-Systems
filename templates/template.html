@@ -19,7 +19,8 @@
             <a class="navbar-link">Stock Trading</a>
             <div class="navbar-dropdown">
               <a class="navbar-item" href="{{url_for('lookup')}}">Ticker Lookup</a>
-              <a class="navbar-item" href="{{url_for('stocklogin')}}">Trader Login</a>
+              <a class="navbar-item" href="{{url_for('trading')}}">Trading</a>
+              <a class="navbar-item" href="{{url_for('holdings')}}">View holdings</a>
             </div>
           </div>
           <div class="navbar-item has-dropdown is-hoverable">
@@ -38,6 +39,37 @@
           </div>
         </div>
       </div>
+      <div class="dropdown is-hoverable" id="mobDrop">
+        <div class="dropdown-trigger">
+          <button class="button" aria-haspopup="true" aria-controls="dropdown-menu" style="width: 100%;">
+            <span>Navigation</span>
+            <span class="icon is-small">
+              <i class="fas fa-angle-down" aria-hidden="true"></i>
+            </span>
+          </button>
+        </div>
+        <div class="dropdown-menu" id="dropdown-menu" role="menu" style="width: 100%;">
+        <div class="dropdown-content">
+          <a href="{{url_for('home')}}" class="dropdown-item">
+            Homepage
+          </a>
+          <hr clas="dropdown-divider">
+          <a href="{{url_for('lookup')}}" class="dropdown-item">
+            Ticker Lookup
+          </a>
+          <a href="{{url_for('trading')}}" class="dropdown-item">
+            Trading
+          </a>
+          <a href="{{url_for('holdings')}}" class="dropdown-item">
+            Your Holdings
+          </a>
+          <hr class="dropdown-divider">
+          <a href="{{url_for('adminPans')}}" class="dropdown-item">
+            Admin Panel
+          </a>
+        </div>
+      </div>
+    </div>
     </nav>
     <main>
       {% block content %}
@@ -45,7 +77,8 @@
     </main>
     <footer class="footer">
       <div class="content has-text-centered">
-        <p>An Aligallaton Production</p>
+        <p>An Aligallaton Production</p><br>
+        <p>Currently on Version 1.1.1</p>
       </div>
     </footer>
   </body>

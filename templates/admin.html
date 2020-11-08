@@ -72,6 +72,23 @@
   </div>
   <div class="box is-multiline">
     <form method="POST">
+      <p>Adjust a stock's price</p><br>
+      Stock Ticker:<br>
+      <input type="text" name="tickToChange" maxlength="5" required><br>
+      Increase/Decrease:<br>
+      <input type="list" name="fallDrop" list="fallDump"><br>
+      <datalist id="fallDump">
+        <option value="Increase"></option>
+        <option value="Decrease"></option>
+      </datalist>
+      Percentage Change:<br>
+      <input type="number" name="percent"><br>
+      <input type="hidden" name="stockChange">
+      <input type="submit" class="button" value="Change Stock Price">
+    </form>
+  </div>
+  <div class="box is-multiline">
+    <form method="POST">
       <p>Remove A Stock</p><br>
       Stock To Remove's Ticker:<br>
       <input type="text" name="tickerDrop" required><br>
