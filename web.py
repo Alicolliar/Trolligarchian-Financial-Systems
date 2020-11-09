@@ -5,13 +5,13 @@ import threading
 from random import uniform
 from datetime import datetime
 db = sql.connect(
-    host="localhost",
-    user="root",
-    password="SadieLoki2018!",
-    db="finance_testing")
+    host="###DATABASEADDRESS###",
+    user="####DATABASEUSERNAME###",
+    password="###DATABASEPASSWORD",
+    db="###DATABASE")
 app = Flask(__name__)
-app.secret_key = "466173636973747352756c6521"
-authParams = {"Authorization":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOiI3NTc5MDA2NjQzMzE0MzY0MzAiLCJpYXQiOjE2MDM1NTg3MTh9.jrZpy7vjbp4CiH4d3zwkp-qgs3P8KBdSFvg9J91wmFc"}
+app.secret_key = "###AN_IMAGINATIVE_SECRET_KEY###"
+authParams = {"Authorization":"###UNBLIEVA_TOKEN###"}
 
 @app.route('/')
 def home():
