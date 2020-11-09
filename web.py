@@ -5,41 +5,30 @@ import threading
 from random import uniform
 from datetime import datetime
 db = sql.connect(
-    host="###databaseadress###",
-    user="###databaseuser",
-    password="###databasepassword",
-    db="###database")
+    host="localhost",
+    user="root",
+    password="SadieLoki2018!",
+    db="finance_testing")
 app = Flask(__name__)
-app.secret_key = "###secret_key###"
-authParams = {"Authorization":"###unbelieva_key###"}
-
-def priceMoves():
-    threading.Timer(600.0, priceMoves).start()
-    findQuery = "SELECT ticker, curPrice FROM stocks;"
-    with db.cursor() as cursor:
-        cursor.execute(findQuery)
-        tickers = cursor.fetchall()
-        for dat in tickers:
-            tick = dat[0]
-            curPrice = dat[1]
-            downPrice = (curPrice * 0.95)
-            upPrice = (curPrice * 1.05)
-            newPrice = uniform(downPrice, upPrice)
-            print(newPrice)
-            now = datetime.now()
-            dt_string = now.strftime("%d/%m/%Y %H:%M:%S")
-            print(dt_string)
-            updateQuery = "UPDATE stocks SET curPrice = '"+str(newPrice)+"' WHERE ticker = '"+str(tick)+"';"
-            recordQuery = "INSERT INTO pricemoves (ticker ,timeStamped, newPrice) VALUES ('"+str(tick)+"','"+str(dt_string)+"', '"+str(newPrice)+"');"
-            cursor.execute(updateQuery)
-            cursor.execute(recordQuery)
-            cursor.close()
-        db.commit()
+app.secret_key = "466173636973747352756c6521"
+authParams = {"Authorization":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOiI3NTc5MDA2NjQzMzE0MzY0MzAiLCJpYXQiOjE2MDM1NTg3MTh9.jrZpy7vjbp4CiH4d3zwkp-qgs3P8KBdSFvg9J91wmFc"}
 
 @app.route('/')
 def home():
+    totalVal = 0
+    query = "SELECT curPrice, tradeableVolume, totalVolume FROM stocks"
+    with db.cursor() as cursor:
+        cursor.execute(query)
+        data = cursor.fetchall()
+        print(data)
+        cursor.close()
+    for dat in data:
+        boughtVol = dat[2] - dat[1]
+        totVal = boughtVol * dat[0]
+        totalVal += totVal
+    totalVal = round(totalVal, 0)
     message = "There is some cool stuff here. Try the site on your phone now!"
-    return render_template("home.html", message=message)
+    return render_template("home.html", message=message, val=totalVal)
 
 @app.route('/stocklookup', methods=['GET', 'POST'])
 def lookup():
@@ -160,7 +149,7 @@ def trading():
             cursor.execute(query4)
             rishiURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/"
             runningURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/"+str(discID)
-            rishi = request.patch(rishiURL, headers=authParams, json=dataRish)
+            rishi = requests.patch(rishiURL, headers=authParams, json=dataRish)
             running = requests.patch(runningURL, headers=authParams, json=data1)
             db.commit()
             cursor.close()
@@ -213,13 +202,14 @@ def holdings():
             repetQuery = "SELECT curPrice FROM stocks WHERE ticker = '"+str(tickBoi)+"';"
             cursor.execute(repetQuery)
             price = cursor.fetchone()
-            price = list(price)
-            fullPrice = float(price[0]) * int(i[1])
+            price = price[0]
+            fullPrice = price * int(i[1])
             print(fullPrice)
             i.append(fullPrice)
             totVal += fullPrice
         totVal = round(totVal, 2)
         cursor.close()
+        print(holds)
     return render_template("stocks/holdingsView.html", holds=holds, users=user, valTot=totVal)
 
 @app.route('/adLogin', methods=['GET', 'POST']) ##DONE FOR NOW
@@ -307,12 +297,14 @@ def adminPans():
                 message = str(uID)+" password succesfully changed."
                 return render_template("admin.html", mess=message)
         elif 'tickerAdd' in data:
+            print(data)
             new = data['newTick']
             name = data['newName']
             vol = data['newVol']
             price = data['openPrice']
             findQuery = "SELECT companyName FROM stocks WHERE ticker = '"+str(new)+"';"
             addQuery = "INSERT INTO stocks (ticker, companyName, curPrice, tradeableVolume, totalVolume) VALUES ('"+str(new)+"', '"+str(name)+"', '"+str(price)+"', '"+str(vol)+"', '"+str(vol)+"');"
+            print(addQuery)
             with db.cursor() as cursor:
                 cursor.execute(findQuery)
                 validateMe = cursor.fetchall()
@@ -355,8 +347,10 @@ def adminPans():
                 db.commit()
                 cursor.close()
                 mess = str(ticker)+" changed in price by "+str(percentChange)+"% to price £"+str(newPrice)+"."
+                return render_template("admin.html", mess=mess)
 
-    return render_template("admin.html", mess=mess)
+
+    return render_template("admin.html")
 
 if __name__ == '__main__':
     app.run(debug=True)
