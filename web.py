@@ -5,13 +5,13 @@ import threading
 from random import uniform
 from datetime import datetime
 db = sql.connect(
-    host="localhost",
-    user="root",
-    password="SadieLoki2018!",
-    db="finance_testing")
+    host="databasehost",
+    user="databaseuser",
+    password="databasepassword",
+    db="databasename")
 app = Flask(__name__)
-app.secret_key = "466173636973747352756c6521"
-authParams = {"Authorization":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOiI3NTc5MDA2NjQzMzE0MzY0MzAiLCJpYXQiOjE2MDM1NTg3MTh9.jrZpy7vjbp4CiH4d3zwkp-qgs3P8KBdSFvg9J91wmFc"}
+app.secret_key = "###a_secret_key"
+authParams = {"Authorization":"###unbelievaboat_token###"}
 
 @app.route('/')
 def home():
@@ -195,18 +195,22 @@ def holdings():
         cursor.execute(query)
         holds = cursor.fetchall()
         holds = list(holds)
+        holds = [list(ele) for ele in holds]
         print(holds)
         for i in holds:
-            i = list(i)
+            print(i)
             tickBoi = i[0]
             repetQuery = "SELECT curPrice FROM stocks WHERE ticker = '"+str(tickBoi)+"';"
             cursor.execute(repetQuery)
             price = cursor.fetchone()
             price = price[0]
+            i.append(price)
+            print(price)
             fullPrice = price * int(i[1])
             print(fullPrice)
             i.append(fullPrice)
             totVal += fullPrice
+            print(totVal)
         totVal = round(totVal, 2)
         cursor.close()
         print(holds)
