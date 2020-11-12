@@ -5,13 +5,13 @@ import threading
 from random import uniform
 from datetime import datetime, date
 db = sql.connect(
-    host="localhost",
-    user="root",
-    password="SadieLoki2018!",
-    db="finance_testing")
+    host="DB_HOST",
+    user="DB_USER",
+    password="DB_PASSWORD",
+    db="DBNAME")
 app = Flask(__name__)
-app.secret_key = "466173636973747352756c6521"
-authParams = {"Authorization":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOiI3NTc5MDA2NjQzMzE0MzY0MzAiLCJpYXQiOjE2MDM1NTg3MTh9.jrZpy7vjbp4CiH4d3zwkp-qgs3P8KBdSFvg9J91wmFc"}
+app.secret_key = "###SECRETKEY###"
+authParams = {"Authorization":"###AUTH_TOKEN###"}
 rates = {
     "capGainTax":5,
     "interest":3.5,
