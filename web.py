@@ -3,32 +3,63 @@ import requests
 import pymysql as sql
 import threading
 from random import uniform
-from datetime import datetime
+from datetime import datetime, date
 db = sql.connect(
-    host="###DATABASEADDRESS###",
-    user="####DATABASEUSERNAME###",
-    password="###DATABASEPASSWORD",
-    db="###DATABASE")
+    host="localhost",
+    user="root",
+    password="SadieLoki2018!",
+    db="finance_testing")
 app = Flask(__name__)
-app.secret_key = "###AN_IMAGINATIVE_SECRET_KEY###"
-authParams = {"Authorization":"###UNBLIEVA_TOKEN###"}
+app.secret_key = "466173636973747352756c6521"
+authParams = {"Authorization":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhcHBfaWQiOiI3NTc5MDA2NjQzMzE0MzY0MzAiLCJpYXQiOjE2MDM1NTg3MTh9.jrZpy7vjbp4CiH4d3zwkp-qgs3P8KBdSFvg9J91wmFc"}
+rates = {
+    "capGainTax":5,
+    "interest":3.5,
+    "transact":25
+}
+
+def holdRetrieve(uID):
+    query = "SELECT ticker, quant FROM holdings WHERE uID = '"+str(uID)+"';"
+    totVal = 0
+    with db.cursor() as cursor:
+        cursor.execute(query)
+        holds = cursor.fetchall()
+        holds = list(holds)
+        holds = [list(ele) for ele in holds]
+        print(holds)
+        for i in holds:
+            tickBoi = i[0]
+            repetQuery = "SELECT curPrice FROM stocks WHERE ticker = '"+str(tickBoi)+"';"
+            cursor.execute(repetQuery)
+            price = cursor.fetchone()
+            price = price[0]
+            i.append(price)
+            fullPrice = price * int(i[1])
+            i.append(fullPrice)
+            totVal += fullPrice
+        totVal = round(totVal, 2)
+        cursor.close()
+    return holds, totVal
 
 @app.route('/')
 def home():
     totalVal = 0
-    query = "SELECT curPrice, tradeableVolume, totalVolume FROM stocks"
+    query = "SELECT curPrice, tradeableVolume, totalVolume FROM stocks;"
+    query2 = "SELECT SUM(buyValue) FROM bonds;"
     with db.cursor() as cursor:
         cursor.execute(query)
-        data = cursor.fetchall()
-        print(data)
+        dataS = cursor.fetchall()
+        cursor.execute(query2)
+        dataB = cursor.fetchone()
+        bondTot = double(dataB[0])
         cursor.close()
-    for dat in data:
+    for dat in dataS:
         boughtVol = dat[2] - dat[1]
         totVal = boughtVol * dat[0]
         totalVal += totVal
     totalVal = round(totalVal, 0)
-    message = "There is some cool stuff here. Try the site on your phone now!"
-    return render_template("home.html", message=message, val=totalVal)
+    message = "Bonds now. You can trade bonds on your phone.<br><i><b>Who wouldn't want that?</b></i>"
+    return render_template("home.html", message=message, valS=totalVal, valB=bondTot)
 
 @app.route('/stocklookup', methods=['GET', 'POST'])
 def lookup():
@@ -130,7 +161,7 @@ def trading():
                     return render_template("stocks/tradePage.html", notif=notif)
                 preVAT = float(price[0]) * float(quant)
                 postVAT = round((preVAT * 1.05), 2)
-                vat = -1*round((preVAT*0.05), 0)
+                vat = 1*round((preVAT*0.05), 0)
                 priceforFire = (postVAT)
                 dataRish = {'cash': vat, 'bank': 0}
                 data1 = {'cash': 0, 'bank': priceforFire}
@@ -147,7 +178,7 @@ def trading():
             cursor.execute(query2)
             cursor.execute(query3)
             cursor.execute(query4)
-            rishiURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/"
+            rishiURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/292953664492929025"
             runningURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/"+str(discID)
             rishi = requests.patch(rishiURL, headers=authParams, json=dataRish)
             running = requests.patch(runningURL, headers=authParams, json=data1)
@@ -183,38 +214,145 @@ def holdingsLogin():
             return redirect(url_for("holdings"))
     return render_template("login.html")
 
-@app.route('/personalHoldings')
+@app.route('/personalHoldings', methods=['GET', 'POST'])
 def holdings():
+    if 'uName' not in session and 'adminP' not in session:
+        return redirect(url_for("holdingsLogin"))
+    if request.method == 'POST':
+        user = request.form
+        uName = user['uName']
+        cursor = db.cursor()
+        query = "SELECT uID FROM users WHERE uName = '"+str(uName)+"';"
+        cursor.execute(query)
+        uID = cursor.fetchone()
+        uID = uID[0]
+        holds, totVal = holdRetrieve(uID)
+    uID = session['uID']
+    user = session["uName"]
+    holds, totVal = holdRetrieve(uID)
+    return render_template("stocks/holdingsView.html", holds=holds, users=user, valTot=totVal)
+
+@app.route('/bondCalculator', methods=['GET', 'POST'])
+def bondCalc():
+    if request.method == 'POST':
+        dats = request.form
+        endVal = int(dats['endVal'])
+        period = int(dats['period'])
+        rate = float(dats['rate'])
+        uhuh = endVal/((1+(rate/100))**period)
+        return render_template("bonds/bondCalculator.html", result=round(uhuh,2))
+    return render_template("bonds/bondCalculator.html")
+
+@app.route('/bondLogin', methods=['GET', 'POST'])
+def bondingLogin():
+    if 'uName' in session or 'adminP' in session:
+        return redirect(url_for("bondTrades"))
+    if request.method == "POST":
+        data = request.form
+        uname = data["uname"]
+        pword = data["pwd"]
+        query = "SELECT uID, pWord, discID FROM users WHERE uName = %s"
+        with db.cursor() as cursor:
+            cursor.execute(query, uname)
+            db.commit()
+            gubbins = cursor.fetchone()
+            cursor.close()
+            print(gubbins)
+        if not gubbins:
+            return render_template("login.html", errMess="Incorrect Username, please try again")
+        if pword == gubbins[1]:
+            session['uName'] = uname
+            session['uID'] = gubbins[0]
+            session['discID'] = gubbins[2]
+            return redirect(url_for("bondTrades"))
+    return render_template("login.html")
+
+@app.route('/bondTrading', methods=['GET', 'POST'])
+def bondTrades():
+    if 'uName' not in session and 'adminP' not in session:
+        return redirect(url_for("bondingLogin"))
+    if request.method == 'POST':
+        data = request.form
+        uID = session['uID']
+        val = float(data['endVal'])
+        matureDate = data['matureDate']
+        discID = session['discID']
+        now = datetime.now()
+        startDate = now.date()
+        matureCalc = datetime.strptime(matureDate, "%Y-%m-%d").date()
+        startString = now.strftime("%Y-%m-%d")
+        periods = (((matureCalc-startDate).days)/7)
+        rate = float(rates["interest"])
+        uhuh = val/((1+(rate/100))**periods)
+        uPrice = 0-uhuh
+        query = "INSERT INTO bonds (uID, buyDate, maturityDate, buyValue, fullValue) VALUES ('"+str(uID)+"', '"+str(startString)+"', '"+str(matureDate)+"', '"+str(round(uhuh,2))+"', '"+str(round(val,2))+"');"
+        jsonU = {'cash': 0, 'bank':uPrice}
+        jsonRishi = {'cash': uhuh, 'bank': 0}
+        rishiURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/292953664492929025"
+        runningURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/"+str(discID)
+        rishi = requests.patch(rishiURL, headers=authParams, json=jsonRishi)
+        running = requests.patch(runningURL, headers=authParams, json=jsonU)
+        with db.cursor() as cursor:
+            cursor.execute(query)
+            db.commit()
+            cursor.close()
+        return render_template("bonds/bondTrade.html", notif="Bond Purchased")
+    return render_template("bonds/bondTrade.html")
+
+@app.route('/bondHoldLogin', methods=['GET', 'POST'])
+def bondingHoldLogin():
+    if 'uName' in session or 'adminP' in session:
+        return redirect(url_for("bondTrades"))
+    if request.method == "POST":
+        data = request.form
+        uname = data["uname"]
+        pword = data["pwd"]
+        query = "SELECT uID, pWord, discID FROM users WHERE uName = %s"
+        with db.cursor() as cursor:
+            cursor.execute(query, uname)
+            db.commit()
+            gubbins = cursor.fetchone()
+            cursor.close()
+            print(gubbins)
+        if not gubbins:
+            return render_template("login.html", errMess="Incorrect Username, please try again")
+        if pword == gubbins[1]:
+            session['uName'] = uname
+            session['uID'] = gubbins[0]
+            session['discID'] = gubbins[2]
+            return redirect(url_for("bondHolds"))
+    return render_template("login.html")
+
+@app.route('/bondHoldings', methods=['GET', 'POST'])
+def bondLads():
     if 'uName' not in session and 'adminP' not in session:
         return redirect(url_for("holdingsLogin"))
     uID = session['uID']
     user = session["uName"]
-    query = "SELECT ticker, quant FROM holdings WHERE uID = '"+str(uID)+"';"
-    totVal = 0
-    with db.cursor() as cursor:
-        cursor.execute(query)
-        holds = cursor.fetchall()
-        holds = list(holds)
-        holds = [list(ele) for ele in holds]
-        print(holds)
-        for i in holds:
-            print(i)
-            tickBoi = i[0]
-            repetQuery = "SELECT curPrice FROM stocks WHERE ticker = '"+str(tickBoi)+"';"
-            cursor.execute(repetQuery)
-            price = cursor.fetchone()
-            price = price[0]
-            i.append(price)
-            print(price)
-            fullPrice = price * int(i[1])
-            print(fullPrice)
-            i.append(fullPrice)
-            totVal += fullPrice
-            print(totVal)
-        totVal = round(totVal, 2)
-        cursor.close()
-        print(holds)
-    return render_template("stocks/holdingsView.html", holds=holds, users=user, valTot=totVal)
+    discID = session["discID"]
+    query = "SELECT bondID, maturityDate, fullValue, buyValue FROM bonds WHERE uID = '"+str(uID)+"';"
+    cursor = db.cursor()
+    cursor.execute(query)
+    bonds = cursor.fetchall()
+    if request.method == 'POST':
+        bondID = request.form['sell']
+        print(bondID)
+        for i in bonds:
+            if i[0] == bondID:
+                 bond = i
+        query = "DELETE FROM bonds WHERE bondID = '"+str(bondID)+"';"
+        rish = 0-i[3]
+        dataU = {'cash':0, 'bank': i[3]}
+        dataR = {'cash': rish, 'bank': 0}
+        rishiURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/292953664492929025"
+        runningURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/"+str(discID)
+        rishi = requests.patch(rishiURL, headers=authParams, json=dataR)
+        running = requests.patch(runningURL, headers=authParams, json=dataU)
+        with db.cursor() as cursor:
+            cursor.execute(query)
+            db.commit()
+    cursor.close()
+    return render_template("bonds/bondHoldings.html", holds=bonds, users=user)
 
 @app.route('/adLogin', methods=['GET', 'POST']) ##DONE FOR NOW
 def adminlogin():

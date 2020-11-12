@@ -3,6 +3,11 @@
 <title>Trolligarchian Stock Market - {{users}} Holdings</title>
 <div class="block">
   <h3>{{users}}'s Holdings</h3>
+  <form class="form" method="post".
+    <h4>Want to view someone else's holdings?</h4>
+    Input their username here:<br>
+    <input type="text" name="uName" required><input type="submit" class="button is-link" value="View Holdings">
+  </form>
   {% if holds %}
     {% for hold in holds %}
       <div class="box is-multiline">

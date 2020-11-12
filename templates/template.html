@@ -26,8 +26,9 @@
           <div class="navbar-item has-dropdown is-hoverable">
             <a class="navbar-link">Bond Trading</a>
             <div class="navbar-dropdown">
-              <a class="navbar-item">Return Calculator</a>
-              <a class="navbar-item">Trader Login</a>
+              <a class="navbar-item" href="{{url_for('bondCalc')}}">Return Calculator</a>
+              <a class="navbar-item" href="{{url_for('bondTrades')}}">Bond Purchase</a>
+              <a class="navbar-item" href="{{url_for('bondLads')}}">Your Bond Holdings</a>
             </div>
           </div>
         </div>
@@ -78,7 +79,7 @@
     <footer class="footer">
       <div class="content has-text-centered">
         <p>An Aligallaton Production</p>
-        <p>Currently on Version 1.1.1</p>
+        <p>Currently on Version 2.1.1</p>
       </div>
     </footer>
   </body>

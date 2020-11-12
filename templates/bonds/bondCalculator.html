@@ -2,13 +2,18 @@
 {% block content %}
 <title>Trolligarchian Stock Market - Bond Calculator</title>
 <div class="block">
-  <h3>Trolligarchian Ticker Lookup
+  <h3>Trolligarchian Bond Calculator</h3>
   <form method="POST">
     Value at the End:<br>
-
-  {% if data %}
+    <input type="number" name="endVal"><br>
+    Weeks the stock is owned for:<br>
+    <input type="number" name="period" value="1" ><br>
+    Interest Rate of the Bond:<br>
+    <input type="number" name="rate" value="{{curRate}}" step="0.1" min="0"><br>
+    <input type="submit" class="button is-link" value="Calculate Current Price">
+  {% if result %}
   <div class="box is-multiline">
-    
+    <p>End value: £{{result}}</p>
   </div>
   {% endif %}
 </div>

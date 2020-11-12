@@ -1,0 +1,24 @@
+{% extends "template.html" %}
+{% block content %}
+<title>Trolligarchian Stock Market - {{users}} Holdings</title>
+<div class="block">
+  <h3>{{users}}'s Holdings</h3>
+  {% if holds %}
+    {% for hold in holds %}
+      <div class="box is-multiline">
+        <p>Bond ID: {{hold[0]}}<br>
+        Maturity Date: {{hold[1]}}<br>
+        Total Value: {{hold[2]}}<br>
+        Current Payout: {{hold[3]}}<br></p>
+        <form method="POST">
+          <input type="submit" class="button" name="sell" value="{{hold[0]}}">
+        </form>
+      </div>
+    {% endfor %}
+    <br><br>
+  {% else %}
+    <h5>You don't own any bonds. You can buy some <a href="{{url_for('bondTrades')}}">here</a></h5>
+  {% endif %}
+  <h4><b>Total Value: £{{valTot}}</b></h4>
+</div>
+{% endblock %}
