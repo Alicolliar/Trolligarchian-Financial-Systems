@@ -51,14 +51,14 @@ def home():
         dataS = cursor.fetchall()
         cursor.execute(query2)
         dataB = cursor.fetchone()
-        bondTot = double(dataB[0])
+        bondTot = dataB[0]
         cursor.close()
     for dat in dataS:
         boughtVol = dat[2] - dat[1]
         totVal = boughtVol * dat[0]
         totalVal += totVal
     totalVal = round(totalVal, 0)
-    message = "Bonds now. You can trade bonds on your phone.<br><i><b>Who wouldn't want that?</b></i>"
+    message = "Honourable mention to Memer who helped us find a major bug that would have caused some big issues if it had been further exploited. They get a cookie."
     return render_template("home.html", message=message, valS=totalVal, valB=bondTot)
 
 @app.route('/stocklookup', methods=['GET', 'POST'])
@@ -121,6 +121,8 @@ def trading():
             discID = session['discID']
             type = order["tType"]
             uName = session['uID']
+            rishiURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/292953664492929025"
+            runningURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/"+str(discID)
             cursor = db.cursor()
             query1 = "SELECT curPrice, tradeableVolume, totalVolume FROM stocks WHERE ticker = %s"
             query15 = "SELECT hID, quant FROM holdings WHERE ticker = '"+str(stock)+"' AND uID = "+str(uName)+";"
@@ -138,6 +140,10 @@ def trading():
                 preVAT = float(price[0]) * float(quant)
                 postVAT = round((preVAT * 1.05), 2)
                 vat = round((preVAT*0.05), 0)
+                yourBal = requests.get(runningURL, headers=authParams)
+                bal = yourBal['total']
+                if postVAT > bal:
+                    return render_template("tradePage.html", notif="You do not have the requisite balance. Please select a different volume.")
                 priceforFire = (0-postVAT)
                 dataRish = {'cash': vat, 'bank': 0}
                 data1 = {'cash': 0, 'bank': priceforFire}
@@ -178,8 +184,6 @@ def trading():
             cursor.execute(query2)
             cursor.execute(query3)
             cursor.execute(query4)
-            rishiURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/292953664492929025"
-            runningURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/"+str(discID)
             rishi = requests.patch(rishiURL, headers=authParams, json=dataRish)
             running = requests.patch(runningURL, headers=authParams, json=data1)
             db.commit()
@@ -227,9 +231,10 @@ def holdings():
         uID = cursor.fetchone()
         uID = uID[0]
         holds, totVal = holdRetrieve(uID)
-    uID = session['uID']
-    user = session["uName"]
-    holds, totVal = holdRetrieve(uID)
+    else:
+        uID = session['uID']
+        user = session["uName"]
+        holds, totVal = holdRetrieve(uID)
     return render_template("stocks/holdingsView.html", holds=holds, users=user, valTot=totVal)
 
 @app.route('/bondCalculator', methods=['GET', 'POST'])
