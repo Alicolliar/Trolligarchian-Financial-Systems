@@ -4,18 +4,19 @@ import pymysql as sql
 import threading
 from random import uniform
 from datetime import datetime, date
+from randomFunctions import *
 db = sql.connect(
-    host="DB_HOST",
-    user="DB_USER",
-    password="DB_PASSWORD",
-    db="DBNAME")
+    host="###dbhost###",
+    user="###dbuser",
+    password="###dbpassword###",
+    db="###db###")
 app = Flask(__name__)
-app.secret_key = "###SECRETKEY###"
-authParams = {"Authorization":"###AUTH_TOKEN###"}
+app.secret_key = "###secret_key###"
+authParams = {"Authorization":"###authKey###"}
 rates = {
-    "capGainTax":5,
+    "capGainTax":20,
     "interest":3.5,
-    "transact":25
+    "transact":32
 }
 
 def holdRetrieve(uID):
@@ -34,7 +35,7 @@ def holdRetrieve(uID):
             price = cursor.fetchone()
             price = price[0]
             i.append(price)
-            fullPrice = price * int(i[1])
+            fullPrice = (price * int(i[1]))
             i.append(fullPrice)
             totVal += fullPrice
         totVal = round(totVal, 2)
@@ -45,21 +46,20 @@ def holdRetrieve(uID):
 def home():
     totalVal = 0
     query = "SELECT curPrice, tradeableVolume, totalVolume FROM stocks;"
-    query2 = "SELECT SUM(buyValue) FROM bonds;"
+    #query2 = "SELECT SUM(buyValue) FROM bonds;"
     with db.cursor() as cursor:
         cursor.execute(query)
         dataS = cursor.fetchall()
-        cursor.execute(query2)
-        dataB = cursor.fetchone()
-        bondTot = dataB[0]
-        cursor.close()
+        #cursor.execute(query2)
+        #dataB = cursor.fetchone()
+        #bondTot = dataB[0]
     for dat in dataS:
         boughtVol = dat[2] - dat[1]
         totVal = boughtVol * dat[0]
         totalVal += totVal
     totalVal = round(totalVal, 0)
     message = "Honourable mention to Memer who helped us find a major bug that would have caused some big issues if it had been further exploited. They get a cookie."
-    return render_template("home.html", message=message, valS=totalVal, valB=bondTot)
+    return render_template("home.html", message=message, valS=totalVal)#, valB=bondTot)
 
 @app.route('/stocklookup', methods=['GET', 'POST'])
 def lookup():
@@ -111,10 +111,10 @@ def stocklogin():
             return redirect(url_for("trading"))
     return render_template("login.html")
 
-@app.route('/stockTrade', methods=['GET', 'POST']) ##DONE FOR NOW
+@app.route('/stockTrade', methods=['GET', 'POST'])
 def trading():
     if session['uName']:
-        if request.method == 'POST':
+        if request. method == 'POST':
             order = request.form
             stock = order["ticker"]
             quant = order["numStock"]
@@ -122,7 +122,7 @@ def trading():
             type = order["tType"]
             uName = session['uID']
             rishiURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/292953664492929025"
-            runningURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/"+str(discID)
+            runningURL = ("https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/"+str(discID))
             cursor = db.cursor()
             query1 = "SELECT curPrice, tradeableVolume, totalVolume FROM stocks WHERE ticker = %s"
             query15 = "SELECT hID, quant FROM holdings WHERE ticker = '"+str(stock)+"' AND uID = "+str(uName)+";"
@@ -138,8 +138,8 @@ def trading():
                     note = "Volume is too low."
                     return render_template("stocks/tradePage.html", notif=note)
                 preVAT = float(price[0]) * float(quant)
-                postVAT = round((preVAT * 1.05), 2)
-                vat = round((preVAT*0.05), 0)
+                postVAT = round(preVAT * (1+(rates["capGainTax"]/10)), 2)
+                vat = round((preVAT*(rates["transact"]/10)), 0)
                 yourBal = requests.get(runningURL, headers=authParams)
                 bal = yourBal['total']
                 if postVAT > bal:
@@ -157,7 +157,7 @@ def trading():
                     query4 = "INSERT INTO holdings (uID, ticker, quant) VALUES('"+str(uName)+"', '"+str(stock)+"', "+str(quant)+");"
                 query2 = "INSERT INTO orders (uID, ticker, price, numStock, priceperVAT, totalPrice, orderType) VALUES ('"+str(uName)+"', '"+stock+"', '"+str(price[0])+"', '"+quant+"', '"+str(preVAT)+"', '"+str(postVAT)+"', 'Buy');"
                 query3 = "UPDATE stocks SET tradeableVolume = "+str(newVol)+", curPrice = "+str(newPrice)+" WHERE ticker = '"+stock+"';"
-                notification = str(uName)+" has purchased "+str(quant)+" of "+stock+" at £"+str(price[0])+" giving a total of £"+str(postVAT)+", including all tax."
+                notification = (str(uName)+" has purchased "+str(quant)+" of "+stock+" at £"+str(price[0])+" giving a total of £"+str(postVAT)+", including all tax.")
             else:
                 if float(quant) > float(price[1]):
                     note = "Volume is too high."
@@ -189,7 +189,6 @@ def trading():
             db.commit()
             cursor.close()
             return render_template("stocks/tradePage.html", notif=notification)
-
         return render_template("stocks/tradePage.html")
     else:
         redirect(url_for("stocklogin"))
@@ -249,6 +248,8 @@ def bondCalc():
     return render_template("bonds/bondCalculator.html")
 
 @app.route('/bondLogin', methods=['GET', 'POST'])
+def locked5():
+    return render_template("shuttered.html")
 def bondingLogin():
     if 'uName' in session or 'adminP' in session:
         return redirect(url_for("bondTrades"))
@@ -273,6 +274,8 @@ def bondingLogin():
     return render_template("login.html")
 
 @app.route('/bondTrading', methods=['GET', 'POST'])
+def locked4():
+    return render_template("shuttered.html")
 def bondTrades():
     if 'uName' not in session and 'adminP' not in session:
         return redirect(url_for("bondingLogin"))
@@ -305,6 +308,8 @@ def bondTrades():
     return render_template("bonds/bondTrade.html")
 
 @app.route('/bondHoldLogin', methods=['GET', 'POST'])
+def locked3():
+    return render_template("shuttered.html")
 def bondingHoldLogin():
     if 'uName' in session or 'adminP' in session:
         return redirect(url_for("bondTrades"))
@@ -329,6 +334,9 @@ def bondingHoldLogin():
     return render_template("login.html")
 
 @app.route('/bondHoldings', methods=['GET', 'POST'])
+def locked2():
+    return render_template("shuttered.html")
+
 def bondLads():
     if 'uName' not in session and 'adminP' not in session:
         return redirect(url_for("holdingsLogin"))
@@ -358,6 +366,188 @@ def bondLads():
             db.commit()
     cursor.close()
     return render_template("bonds/bondHoldings.html", holds=bonds, users=user)
+
+@app.route('/accountsLogin', methods=['GET', 'POST'])
+def accountHolding():
+    if 'uName' in session or 'adminP' in session:
+        return redirect(url_for("accounting"))
+    if request.method == "POST":
+        data = request.form
+        uname = data["uname"]
+        pword = data["pwd"]
+        query = "SELECT uID, pWord, discID FROM users WHERE uName = %s"
+        with db.cursor() as cursor:
+            cursor.execute(query, uname)
+            db.commit()
+            gubbins = cursor.fetchone()
+            cursor.close()
+            print(gubbins)
+        if not gubbins:
+            return render_template("login.html", errMess="Incorrect Username, please try again")
+        if pword == gubbins[1]:
+            session['uName'] = uname
+            session['uID'] = gubbins[0]
+            session['discID'] = gubbins[2]
+            return redirect(url_for("accounting"))
+    return render_template("login.html")
+
+@app.route('/offAccounts', methods=['GET', 'POST'])
+def accounting():
+    if 'uName' not in session and 'adminP' not in session:
+        return redirect(url_for("accountHolding"))
+    uID = session['uID']
+    discID = session['discID']
+    query = "SELECT accID, accName, balance, offshore, frozen FROM accounts WHERE uID = '"+str(uID)+"';"
+    cursor = db.cursor()
+    cursor.execute(query)
+    accounts = cursor.fetchall()
+    if len(accounts) == 0:
+        return render_template("accounts.html")
+    accDats = []
+    for account in accounts:
+        accDat = []
+        accDat.append(account[1])
+        accDat.append(account[2])
+        if account[3] == 1:
+            accDat.append("Offshore")
+        else:
+            accDat.append("Local")
+        accDats.append(accDat)
+    if request.method == 'POST':
+        formGuff = request.form
+        if "newAcc" in formGuff:
+            newName = formGuff["accName"]
+            type = formGuff["type"]
+            query = "SELECT accName FROM accounts;"
+            cursor.execute(query)
+            aAccounts = cursor.fetchall()
+            if newName in aAccounts:
+                return render_template("accounts.html", dets=accDats, failNotif="Account name already reserved.")
+            if type == "Offshore":
+                typeInt = 1
+            else:
+                typeInt = 0
+            query2 = "INSERT INTO accounts (uID, accName, balance, offshore, frozen) VALUES ('"+str(uID)+"', '"+str(newName)+"', '0', '"+str(typeInt)+"', '0');"
+            cursor.execute(query2)
+            db.commit()
+            return render_template("accounts.html", sucNotif=(str(newName)+" created."))
+        elif "transfer" in formGuff:
+            transFrom = formGuff["acctFrom"]
+            transTo = formGuff["acctTo"]
+            transBal = formGuff["transBal"]
+            discID = session["discID"]
+            fromCheck = checkInput(transFrom)
+            toCheck = checkInput(transTo)
+            with db.cursor() as cursor:
+                if fromCheck == False:
+                    queryFrom = "SELECT accID, balance, offshore, frozen FROM accounts WHERE accName = '"+str(transFrom)+"' AND uID = '"+str(uID)+"';"
+                    cursor.execute(queryFrom)
+                    fromAccount = cursor.fetchone()
+                    print(fromAccount)
+                    if not fromAccount:
+                        cursor.close()
+                        return render_template("accounts.html", dets=accDats, failNotif="No accounts to transfer from")
+                    fromID = fromAccount[0]
+                    fromBal = fromAccount[1]
+                    if fromAccount[3] == 1:
+                        frozen = str(transFrom)+" has been frozen. Please contact the government if you believe this is a mistake."
+                        cursor.close()
+                        return render_template("accounts.html", dets=accDats, failNotif=frozen)
+                    if int(transBal) > int(fromBal):
+                        inSuf = str(transFrom)+" has insufficient funds."
+                        cursor.close()
+                        return render_template("accounts.html", dets=accDats, failNotif=inSuf)
+                else:
+                    runURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/"+str(discID)
+                    uBal = requests.get(runURL, headers=authParams)
+                    uBal = uBal.json()
+                    bal = uBal['total']
+                    if int(transBal) > int(bal):
+                        cursor.close()
+                        return render_template("accounts.html", dets=accDats, failNotif="Not enough cash in bank to transfer")
+                if toCheck == False:
+                    queryTo = "SELECT accID, balance, offshore, frozen FROM accounts WHERE accName = '"+str(transTo)+"';"
+                    cursor.execute(queryTo)
+                    toAccount = cursor.fetchone()
+                    toBal = toAccount[1]
+                    if not toAccount:
+                        cursor.close()
+                        return render_template("accounts.html", dets=accDats, failNotif="No account to transfer to")
+                    if toAccount[3] == 1:
+                        frozen = str(transTo)+" has been frozen. Please contact the government if you believe this is a mistake."
+                        cursor.close()
+                        return render_template("accounts.html", dets=accDats, failNotif=frozen)
+                if fromCheck == False and toCheck == False:
+                    if fromAccount[2] == 1 or toAccount[2] == 1:
+                        transBal = float(transBal) * (1-(rates["transact"]/100))
+                        rishiBal = float(transBal) * (rates["transact"]/100)
+                        rishiURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/292953664492929025"
+                        rishiJ = {"cash" : rishiBal, "bank": 0}
+                        requests.patch(rishiURL, headers=authParams, json=rishiJ)
+                    print(transBal)
+                    print(toAccount)
+                    fromNew = (float(fromBal)-float(transBal))
+                    toNew = (float(toBal)+float(transBal))
+                    print(str(toNew), str(fromNew))
+                    fromQuery = "UPDATE accounts SET balance = '"+str(fromNew)+"' WHERE accID = '"+str(fromAccount[0])+"';"
+                    toQuery = "UPDATE accounts SET balance ='"+str(toNew)+"' WHERE accID = '"+str(toAccount[0])+"';"
+                    print(fromQuery)
+                    print(toQuery)
+                    cursor.execute(fromQuery)
+                    cursor.execute(toQuery)
+                    db.commit()
+                    cursor.close()
+                    return render_template("accounts.html", dets=accDats, notif="Transfer Complete")
+                elif fromCheck == True and toCheck == False:
+                    if toAccount[2] == 1:
+                        transBal = transBal * (1-(rates["transact"]/10))
+                        rishiBal = transBal * (rates["transact"]/10)
+                        rishiURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/292953664492929025"
+                        rishiJ = {"cash" : rishiBal, "bank": 0}
+                        requests.patch(rishiURL, headers=authParams, json=rishiJ)
+                    fromURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/"+str(discID)
+                    transBal = (0-int(transBal))
+                    fromJSON = {"cash": 0, "bank": str(transBal)}
+                    toBal = (float(toBal)-float(transBal))
+                    toQuery = "UPDATE accounts SET balance = '"+str(toBal)+"' WHERE accID = '"+str(toAccount[0])+"';"
+                    requests.patch(fromURL, headers=authParams, json=fromJSON)
+                    cursor.execute(toQuery)
+                    db.commit()
+                    cursor.close()
+                    return render_template("accounts.html", dets=accDats, notif="Transfer Complete")
+                elif fromCheck == False and toCheck == True:
+                    if fromAccount[2] == 1:
+                        transBal = transBal * (1-(rates["transact"]/10))
+                        rishiBal = transBal * (rates["transact"]/10)
+                        rishiURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/292953664492929025"
+                        rishiJ = {"cash" : rishiBal, "bank": 0}
+                    toURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/"+str(discID)
+                    toJSON = {"cash": 0, "bank": transBal}
+                    fromBal = (toBal-transBal)
+                    fromQuery = "UPDATE accounts SET balance = '"+str(fromBal)+"' WHERE accID = '"+str(accID)+"';"
+                    requests.patch(toURL, headers=authParams, json=toJSON)
+                    requests.patch(rishiURL, headers=authParams, json=rishiJ)
+                    cursor.execute(toQuery)
+                    db.commit()
+                    cursor.close()
+                    return render_template("accounts.html", dets=accDats, notif="Transfer Complete")
+                else:
+                    return render_template("accounts.html", dets=accDats, failNotif="Can not transfer between your own personal account")
+        elif "delete" in formGuff:
+            accDel = formGuff["accDel"]
+            findQuery = "SELECT uID, balance FROM accounts WHERE accName = '"+str(accDel)+"';"
+            delQuery = "DELETE FROM accounts WHERE accName = '"+str(accDel)+"';"
+            with db.cursor() as cursor:
+                cursor.execute(findQuery)
+                finds = cursor.fetchone()
+                print(finds)
+                if finds[1] > 0:
+                    return render_template("accounts.html", dets=accDats, failNotif="Can not delete account with more than £0")
+                cursor.execute(delQuery)
+                db.commit()
+                return render_template("accounts.html", dets=accDats, notif=str(accDel)+" deleted.")
+    return render_template("accounts.html", dets=accDats)
+
 
 @app.route('/adLogin', methods=['GET', 'POST']) ##DONE FOR NOW
 def adminlogin():
@@ -495,8 +685,36 @@ def adminPans():
                 cursor.close()
                 mess = str(ticker)+" changed in price by "+str(percentChange)+"% to price £"+str(newPrice)+"."
                 return render_template("admin.html", mess=mess)
-
-
+        elif 'freezerAcc' in data:
+            accName = data["accName"]
+            with db.cursor() as cursor:
+                checkQuery = "SELECT accID, frozen FROM accounts WHERE accName = '"+str(accName)+"';"
+                transitionQuery = "UPDATE accounts SET frozen = 1 WHERE accName = '"+str(accName)+"';"
+                cursor.execute(checkQuery)
+                check = cursor.fetchone()
+                if not check:
+                    return render_template("admin.html", errMess="Account does not exist")
+                if check[1] == 1:
+                    return render_template("admin.html", errMess="Account already frozen")
+                cursor.execute(transitionQuery)
+                db.commit()
+                cursor.close()
+                return render_template("admin.html", mess="Account succesfully frozen")
+        elif 'defrostAcc' in data:
+            accName = data["accName"]
+            with db.cursor() as cursor:
+                checkQuery = "SELECT accID, frozen FROM accounts WHERE accName = '"+str(accName)+"';"
+                transitionQuery = "UPDATE accounts SET frozen = 0 WHERE accName = '"+str(accName)+"';"
+                cursor.execute(checkQuery)
+                check = cursor.fetchone()
+                if not check:
+                    return render_template("admin.html", errMess="Account does not exist")
+                if check[1] == 0:
+                    return render_template("admin.html", errMess="Account not frozen")
+                cursor.execute(transitionQuery)
+                db.commit()
+                cursor.close()
+                return render_template("admin.html", mess="Account succesfully defrosted")
     return render_template("admin.html")
 
 if __name__ == '__main__':

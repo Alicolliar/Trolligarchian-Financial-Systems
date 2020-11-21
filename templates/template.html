@@ -27,10 +27,11 @@
             <a class="navbar-link">Bond Trading</a>
             <div class="navbar-dropdown">
               <a class="navbar-item" href="{{url_for('bondCalc')}}">Return Calculator</a>
-              <a class="navbar-item" href="{{url_for('bondTrades')}}">Bond Purchase</a>
-              <a class="navbar-item" href="{{url_for('bondLads')}}">Your Bond Holdings</a>
+              <a class="navbar-item" href="{{url_for('locked3')}}">Bond Purchase</a>
+              <a class="navbar-item" href="{{url_for('locked5')}}">Your Bond Holdings</a>
             </div>
           </div>
+          <a class="navbar-item" href="{{url_for('accounting')}}">Accounts</a>
         </div>
         <div class="navbar-end">
           <div class="navbar-item">
@@ -64,15 +65,19 @@
           <a href="{{url_for('holdings')}}" class="dropdown-item">
             Your Holdings
           </a>
-          <hr class="dropdown-divier">
+          <hr class="dropdown-divider">
           <a href="{{url_for('bondCalc')}}" clas="dropdown-item">
             Bond Calculator
           </a>
-          <a href="{{url_for('bondTrades')}}" class="dropdown-item">
+          <a href="{{url_for('locked4')}}" class="dropdown-item">
             Bond Trading
           </a>
-          <a href="{{url_for('bondLads')}}" class="dropdown-item">
+          <a href="{{url_for('locked2')}}" class="dropdown-item">
             Bond Holdings
+          </a>
+          <hr class="dropdown-divider">
+          <a href="{{url_for('accounting')}}">
+            Accounts (Offshore and Local)
           </a>
           <hr class="dropdown-divider">
           <a href="{{url_for('adminPans')}}" class="dropdown-item">

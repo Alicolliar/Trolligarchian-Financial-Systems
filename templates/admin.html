@@ -11,7 +11,7 @@
     {{errMess}}
   </div>
 {% endif  %}
-<div class="box is-multiline" style="display: inline-block">
+<div class="block is-multiline" style="display: inline-block; vertical-align: top">
   <h4>User Controls</h4>
   <div class="box is-multiline">
     <form method="POST">
@@ -43,7 +43,7 @@
       <input type="submit" class="button" value="Change Users Passwords">
     </form>
   </div>
-    <div class="box is-multiline">
+  <div class="box is-multiline">
     <form method="POST">
       <p>Delete a user</p><br>
       User's ID:<br>
@@ -53,7 +53,7 @@
     </form>
   </div>
 </div>
-<div class="box is-multiline" style="display: inline-block">
+<div class="box is-multiline" style="display: inline-block; vertical-align: top">
   <h4>Stock Controls</h4>
   <div class="box is-multiline"">
     <form method="POST">
@@ -94,7 +94,47 @@
       <input type="text" name="tickerDrop" required><br>
       <input type="hidden" name="tickerDelete">
       <input type="submit" class="button is-danger" value="Delete Stock">
+    </form>
   </div>
 </div>
-
+<div class="box is-multiline" style="display: inline-block; vertical-align: top">
+  <h4>Account Controls</h4>
+  <div class="box is-multiline">
+    <form method="POST">
+      <p>Freeze an account</p>
+      Enter Account Name:<br>
+      <input type="text" name="accName"><br>
+      <input type="hidden" name="freezerAcc">
+      <input type="submit" class="button is-danger" value="Freeze Account">
+    </form>
+  </div>
+  <div class="box is-multiline">
+    <form method="POST">
+      <p>Defrost Accounts</p>
+      Enter Account Name:<br>
+      <input type="text" name="accName"><br>
+      <input type="hidden" name="defrostAcc">
+      <input type="submit" class="button is-link" value="Defrost Account">
+    </form>
+  </div>
+  <div class="box is-multiline">
+    <div class="notification is-danger"><p>Please note! The following isn't functional</p></div>
+    <form method="POST">
+      <p>Freeze User</p>
+      Enter Account Name:<br>
+      <input type="text" name="uName"><br>
+      <input type="hidden" name="freezerUse">
+      <input type="submit" class="button is-danger" value="Freeze User">
+    </form>
+  </div>
+  <div class="box is-multiline">
+    <form method="POST">
+      <p>Defrost User</p>
+      Enter Username:<br>
+      <input type="text" name="uName">
+      <input type="hidden" name="defrostUse">
+      <input type="submit" class="button is-link" value="Defrost User">
+    </form>
+  </div>
+</div>
 {% endblock %}
