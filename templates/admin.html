@@ -25,6 +25,7 @@
       <datalist id="userLevels">
         <option value="Admin">
         <option value="User">
+        <option value="Corporate">
       </datalist>
       Discord ID:<br>
       <input type="text" name="discID"><br>
@@ -96,9 +97,25 @@
       <input type="submit" class="button is-danger" value="Delete Stock">
     </form>
   </div>
+  <div class="box is-multiline">
+    <form method="POST">
+      <p>Change a Stock's +/- Thresholds(?)</p><br>
+      Stock To Change:<br>
+      <input type="text" name="ticker"><br>
+      New + Rate:<br>
+      <input type="number" name="uprate"><br>
+      New - Rate:<br>
+      <input type="number" name="downrate"><br>
+      <input type="hidden" name="threshChange">
+      <input type="submit" class="button is-link" value="Change Thresholds">
+    </form>
+  </div>
 </div>
+
 <div class="box is-multiline" style="display: inline-block; vertical-align: top">
   <h4>Account Controls</h4>
+  <div class="box is-multiline">
+    <p>Total Offshore Account Value: £{{funcGubbins}}</p>
   <div class="box is-multiline">
     <form method="POST">
       <p>Freeze an account</p>
@@ -117,24 +134,6 @@
       <input type="submit" class="button is-link" value="Defrost Account">
     </form>
   </div>
-  <div class="box is-multiline">
-    <div class="notification is-danger"><p>Please note! The following isn't functional</p></div>
-    <form method="POST">
-      <p>Freeze User</p>
-      Enter Account Name:<br>
-      <input type="text" name="uName"><br>
-      <input type="hidden" name="freezerUse">
-      <input type="submit" class="button is-danger" value="Freeze User">
-    </form>
-  </div>
-  <div class="box is-multiline">
-    <form method="POST">
-      <p>Defrost User</p>
-      Enter Username:<br>
-      <input type="text" name="uName">
-      <input type="hidden" name="defrostUse">
-      <input type="submit" class="button is-link" value="Defrost User">
-    </form>
-  </div>
 </div>
+
 {% endblock %}

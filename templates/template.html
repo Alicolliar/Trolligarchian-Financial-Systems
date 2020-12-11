@@ -31,7 +31,12 @@
               <a class="navbar-item" href="{{url_for('locked5')}}">Your Bond Holdings</a>
             </div>
           </div>
-          <a class="navbar-item" href="{{url_for('accounting')}}">Accounts</a>
+          <div class="navbar-item has-dropdown is-hoverable">
+            <a class="navbar-item" href="{{url_for('accounting')}}">Accounts</a>
+            <div class="navbar-dropdown">
+              <a class="navbar-item" href="{{url_for('accSearch')}}">Account Searching</a>
+            </div>
+          </div>
         </div>
         <div class="navbar-end">
           <div class="navbar-item">
@@ -39,6 +44,13 @@
               <a class="button is-primary" href="{{url_for('adminPans')}}">Admin Log In</a>
             </div>
           </div>
+          {% if session['uName'] %}
+          <div class="navbar-item">
+            <div class="buttons">
+              <a class="button is-link" href="{{url_for('logout')}}">Logout</a>
+            </div>
+          </div>
+          {% endif %}
         </div>
       </div>
       <div class="dropdown is-hoverable" id="mobDrop">
@@ -66,7 +78,7 @@
             Your Holdings
           </a>
           <hr class="dropdown-divider">
-          <a href="{{url_for('bondCalc')}}" clas="dropdown-item">
+          <a href="{{url_for('bondCalc')}}" class="dropdown-item">
             Bond Calculator
           </a>
           <a href="{{url_for('locked4')}}" class="dropdown-item">
@@ -76,7 +88,7 @@
             Bond Holdings
           </a>
           <hr class="dropdown-divider">
-          <a href="{{url_for('accounting')}}">
+          <a href="{{url_for('accounting')}}" class="dropdown-item">
             Accounts (Offshore and Local)
           </a>
           <hr class="dropdown-divider">
@@ -94,7 +106,7 @@
     <footer class="footer">
       <div class="content has-text-centered">
         <p>An Aligallaton Production</p>
-        <p>Currently on Version 2.1.1</p>
+        <p>Currently on Version 3.2.1</p>
       </div>
     </footer>
   </body>

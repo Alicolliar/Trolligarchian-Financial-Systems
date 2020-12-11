@@ -6,13 +6,13 @@ from random import uniform
 from datetime import datetime, date
 from randomFunctions import *
 db = sql.connect(
-    host="###dbhost###",
-    user="###dbuser",
-    password="###dbpassword###",
-    db="###db###")
+    host="###database_host###",
+    user="###database_user###",
+    password="###database_password###",
+    db="###database_name###")
 app = Flask(__name__)
-app.secret_key = "###secret_key###"
-authParams = {"Authorization":"###authKey###"}
+app.secret_key = "###SECRET_KEY###"
+authParams = {"Authorization":"###YOUR_UNBELIEV_KEY###"}
 rates = {
     "capGainTax":20,
     "interest":3.5,
@@ -46,20 +46,24 @@ def holdRetrieve(uID):
 def home():
     totalVal = 0
     query = "SELECT curPrice, tradeableVolume, totalVolume FROM stocks;"
+    accQuery = "SELECT SUM(balance) FROM accounts WHERE offshore = 0;"
     #query2 = "SELECT SUM(buyValue) FROM bonds;"
     with db.cursor() as cursor:
         cursor.execute(query)
         dataS = cursor.fetchall()
+        cursor.execute(accQuery)
+        dataA = cursor.fetchone()
         #cursor.execute(query2)
         #dataB = cursor.fetchone()
         #bondTot = dataB[0]
+        accTot = dataA[0]
     for dat in dataS:
         boughtVol = dat[2] - dat[1]
         totVal = boughtVol * dat[0]
         totalVal += totVal
     totalVal = round(totalVal, 0)
-    message = "Honourable mention to Memer who helped us find a major bug that would have caused some big issues if it had been further exploited. They get a cookie."
-    return render_template("home.html", message=message, valS=totalVal)#, valB=bondTot)
+    message = "The British Virgin Islands can now be found over in the Accounts section. Enjoy"
+    return render_template("home.html", message=message, valS=totalVal, valB=accTot)
 
 @app.route('/stocklookup', methods=['GET', 'POST'])
 def lookup():
@@ -95,7 +99,7 @@ def stocklogin():
         data = request.form
         uname = data["uname"]
         pword = data["pwd"]
-        query = "SELECT uID, pWord, discID FROM users WHERE uName = %s"
+        query = "SELECT uID, pWord, discID, perms FROM users WHERE uName = %s"
         with db.cursor() as cursor:
             cursor.execute(query, uname)
             db.commit()
@@ -108,90 +112,112 @@ def stocklogin():
             session['uName'] = uname
             session['uID'] = gubbins[0]
             session['discID'] = gubbins[2]
+            session['accType'] = gubbins[3]
             return redirect(url_for("trading"))
     return render_template("login.html")
 
 @app.route('/stockTrade', methods=['GET', 'POST'])
 def trading():
-    if session['uName']:
-        if request. method == 'POST':
-            order = request.form
-            stock = order["ticker"]
-            quant = order["numStock"]
-            discID = session['discID']
-            type = order["tType"]
-            uName = session['uID']
-            rishiURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/292953664492929025"
-            runningURL = ("https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/"+str(discID))
-            cursor = db.cursor()
-            query1 = "SELECT curPrice, tradeableVolume, totalVolume FROM stocks WHERE ticker = %s"
-            query15 = "SELECT hID, quant FROM holdings WHERE ticker = '"+str(stock)+"' AND uID = "+str(uName)+";"
-            cursor.execute(query1, stock)
-            price = cursor.fetchone()
-            cursor.execute(query15)
-            help = cursor.fetchone()
-            if not price:
-                note = "No stock with that ticker."
+    if 'uName' not in session:
+        redirect(url_for("stocklogin"))
+    if request. method == 'POST':
+        order = request.form
+        stock = order["ticker"]
+        quant = order["numStock"]
+        discID = session['discID']
+        type = order["tType"]
+        uName = session['uID']
+        accType = session['accType']
+        rishiURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/292953664492929025"
+        runningURL = ("https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/"+str(discID))
+        cursor = db.cursor()
+        query1 = "SELECT curPrice, tradeableVolume, totalVolume FROM stocks WHERE ticker = %s"
+        query15 = "SELECT hID, quant FROM holdings WHERE ticker = '"+str(stock)+"' AND uID = "+str(uName)+";"
+        cursor.execute(query1, stock)
+        price = cursor.fetchone()
+        cursor.execute(query15)
+        help = cursor.fetchone()
+        if not price:
+            note = "No stock with that ticker."
+            return render_template("stocks/tradePage.html", notif=note)
+        if type == "Buy":
+            if float(price[1]) < float(quant):
+                note = "Volume is too low."
                 return render_template("stocks/tradePage.html", notif=note)
-            if type == "Buy":
-                if float(price[1]) < float(quant):
-                    note = "Volume is too low."
-                    return render_template("stocks/tradePage.html", notif=note)
-                preVAT = float(price[0]) * float(quant)
-                postVAT = round(preVAT * (1+(rates["capGainTax"]/10)), 2)
-                vat = round((preVAT*(rates["transact"]/10)), 0)
+            preVAT = float(price[0]) * float(quant)
+            postVAT = round(preVAT * (1+(rates["capGainTax"]/10)), 2)
+            vat = round((preVAT*(rates["transact"]/10)), 0)
+            if accType != 2:
                 yourBal = requests.get(runningURL, headers=authParams)
+                yourBal = yourBal.json()
                 bal = yourBal['total']
                 if postVAT > bal:
                     return render_template("tradePage.html", notif="You do not have the requisite balance. Please select a different volume.")
-                priceforFire = (0-postVAT)
-                dataRish = {'cash': vat, 'bank': 0}
-                data1 = {'cash': 0, 'bank': priceforFire}
-                newVol = int(price[1]) - int(quant)
-                priceAdj = int(price[0])*(int(quant)/int(price[2]))
-                newPrice = price[0] + priceAdj
-                if help:
-                    updatQuant = int(quant)+int(help[1])
-                    query4 = "UPDATE holdings SET quant = "+str(updatQuant)+" WHERE hID = "+str(help[0])+";"
-                else:
-                    query4 = "INSERT INTO holdings (uID, ticker, quant) VALUES('"+str(uName)+"', '"+str(stock)+"', "+str(quant)+");"
-                query2 = "INSERT INTO orders (uID, ticker, price, numStock, priceperVAT, totalPrice, orderType) VALUES ('"+str(uName)+"', '"+stock+"', '"+str(price[0])+"', '"+quant+"', '"+str(preVAT)+"', '"+str(postVAT)+"', 'Buy');"
-                query3 = "UPDATE stocks SET tradeableVolume = "+str(newVol)+", curPrice = "+str(newPrice)+" WHERE ticker = '"+stock+"';"
-                notification = (str(uName)+" has purchased "+str(quant)+" of "+stock+" at £"+str(price[0])+" giving a total of £"+str(postVAT)+", including all tax.")
-            else:
-                if float(quant) > float(price[1]):
-                    note = "Volume is too high."
-                    return render_template("stocks/tradePage.html", notif=note)
-                if int(help[1]) < int(quant):
-                    notif = "You don't own this many stock."
-                    return render_template("stocks/tradePage.html", notif=notif)
-                preVAT = float(price[0]) * float(quant)
-                postVAT = round((preVAT * 1.05), 2)
-                vat = 1*round((preVAT*0.05), 0)
-                priceforFire = (postVAT)
-                dataRish = {'cash': vat, 'bank': 0}
-                data1 = {'cash': 0, 'bank': priceforFire}
-                newVol = int(price[1]) + int(quant)
-                priceAdj = int(price[0])*(int(quant)/int(price[2]))
-                newPrice = price[0] - priceAdj
-                print(priceAdj)
-                print(newPrice)
-                updatQuant = int(help[1])-int(quant)
+            priceforFire = (0-postVAT)
+            dataRish = {'cash': vat, 'bank': 0}
+            data1 = {'cash': 0, 'bank': priceforFire}
+            newVol = int(price[1]) - int(quant)
+            priceAdj = int(price[0])*(int(quant)/int(price[2]))
+            newPrice = price[0] + priceAdj
+            if help:
+                updatQuant = int(quant)+int(help[1])
                 query4 = "UPDATE holdings SET quant = "+str(updatQuant)+" WHERE hID = "+str(help[0])+";"
-                query2 = "INSERT INTO orders (uID, ticker, price, numStock, priceperVAT, totalPrice, orderType) VALUES ('"+str(uName)+"', '"+stock+"', '"+str(price[0])+"', '"+quant+"', '"+str(preVAT)+"', '"+str(postVAT)+"', 'Sell');"
-                query3 = "UPDATE stocks SET tradeableVolume = "+str(newVol)+", curPrice = "+str(newPrice)+" WHERE ticker = '"+stock+"';"
-                notification = str(uName)+" has sold "+str(quant)+" of "+stock+" at £"+str(price[0])+" giving a total of £"+str(postVAT)+", including all tax."
-            cursor.execute(query2)
-            cursor.execute(query3)
-            cursor.execute(query4)
+            else:
+                query4 = "INSERT INTO holdings (uID, ticker, quant) VALUES('"+str(uName)+"', '"+str(stock)+"', "+str(quant)+");"
+            query2 = "INSERT INTO orders (uID, ticker, price, numStock, priceperVAT, totalPrice, orderType) VALUES ('"+str(uName)+"', '"+stock+"', '"+str(price[0])+"', '"+quant+"', '"+str(preVAT)+"', '"+str(postVAT)+"', 'Buy');"
+            query3 = "UPDATE stocks SET tradeableVolume = "+str(newVol)+", curPrice = "+str(newPrice)+" WHERE ticker = '"+stock+"';"
+            notification = (str(uName)+" has purchased "+str(quant)+" of "+stock+" at £"+str(price[0])+" giving a total of £"+str(postVAT)+", including all tax.")
             rishi = requests.patch(rishiURL, headers=authParams, json=dataRish)
+        else:
+            if float(quant) > float(price[1]):
+                note = "Volume is too high."
+                return render_template("stocks/tradePage.html", notif=note)
+            if int(help[1]) < int(quant):
+                notif = "You don't own this many stock."
+                return render_template("stocks/tradePage.html", notif=notif)
+            preVAT = float(price[0]) * float(quant)
+            postVAT = round((preVAT * 1.05), 2)
+            vat = 1*round((preVAT*0.05), 0)
+            priceforFire = (postVAT)
+            dataRish = {'cash': vat, 'bank': 0}
+            data1 = {'cash': 0, 'bank': priceforFire}
+            newVol = int(price[1]) + int(quant)
+            priceAdj = int(price[0])*(int(quant)/int(price[2]))
+            newPrice = price[0] - priceAdj
+            updatQuant = int(help[1])-int(quant)
+            if updatQuant > 0:
+                query4 = "UPDATE holdings SET quant = "+str(updatQuant)+" WHERE hID = "+str(help[0])+";"
+            else:
+                query4 = "DELETE FROM holdings WHERE hID = "+str(help[0])+";"
+            query2 = "INSERT INTO orders (uID, ticker, price, numStock, priceperVAT, totalPrice, orderType) VALUES ('"+str(uName)+"', '"+stock+"', '"+str(price[0])+"', '"+quant+"', '"+str(preVAT)+"', '"+str(postVAT)+"', 'Sell');"
+            query3 = "UPDATE stocks SET tradeableVolume = "+str(newVol)+", curPrice = "+str(newPrice)+" WHERE ticker = '"+stock+"';"
+            notification = str(uName)+" has sold "+str(quant)+" of "+stock+" at £"+str(price[0])+" giving a total of £"+str(postVAT)+", including all tax."
+            rishi = requests.patch(rishiURL, headers=authParams, json=dataRish)
+        cursor.execute(query2)
+        cursor.execute(query3)
+        cursor.execute(query4)
+        print(uName)
+        if accType != 2:
             running = requests.patch(runningURL, headers=authParams, json=data1)
-            db.commit()
-            cursor.close()
-            return render_template("stocks/tradePage.html", notif=notification)
-        return render_template("stocks/tradePage.html")
-    else:
-        redirect(url_for("stocklogin"))
+        else:
+            accFindQ = "SELECT accID, balance, frozen FROM accounts WHERE uID = '"+str(uName)+"';"
+            cursor.execute(accFindQ)
+            account = cursor.fetchone()
+            print(account)
+            if account[2] == 1:
+                return render_template("stocks/tradePage.html", notif="Account frozen")
+            if type == "Buy":
+                newBal = account[1] - float(postVAT)
+            else:
+                newBal = account[1] + float(postVAT)
+            if newBal < 0:
+                return render_template("stocks/tradePage.html", notif="You do not have the requisite balance.")
+            balUpdateQuery = "UPDATE accounts SET balance = '"+str(newBal)+"' WHERE accID = '"+str(account[0])+"';"
+            cursor.execute(balUpdateQuery)
+        db.commit()
+        cursor.close()
+        return render_template("stocks/tradePage.html", notif=notification)
+    return render_template("stocks/tradePage.html")
 
 @app.route('/holdLogin', methods=['GET', 'POST']) ##DONE FOR NOW
 def holdingsLogin():
@@ -201,7 +227,7 @@ def holdingsLogin():
         data = request.form
         uname = data["uname"]
         pword = data["pwd"]
-        query = "SELECT uID, pWord, discID FROM users WHERE uName = %s"
+        query = "SELECT uID, pWord, discID, perms FROM users WHERE uName = %s"
         with db.cursor() as cursor:
             cursor.execute(query, uname)
             db.commit()
@@ -214,6 +240,7 @@ def holdingsLogin():
             session['uName'] = uname
             session['uID'] = gubbins[0]
             session['discID'] = gubbins[2]
+            session['accType'] = gubbins[3]
             return redirect(url_for("holdings"))
     return render_template("login.html")
 
@@ -336,7 +363,6 @@ def bondingHoldLogin():
 @app.route('/bondHoldings', methods=['GET', 'POST'])
 def locked2():
     return render_template("shuttered.html")
-
 def bondLads():
     if 'uName' not in session and 'adminP' not in session:
         return redirect(url_for("holdingsLogin"))
@@ -375,7 +401,7 @@ def accountHolding():
         data = request.form
         uname = data["uname"]
         pword = data["pwd"]
-        query = "SELECT uID, pWord, discID FROM users WHERE uName = %s"
+        query = "SELECT uID, pWord, discID, perms FROM users WHERE uName = %s"
         with db.cursor() as cursor:
             cursor.execute(query, uname)
             db.commit()
@@ -388,6 +414,7 @@ def accountHolding():
             session['uName'] = uname
             session['uID'] = gubbins[0]
             session['discID'] = gubbins[2]
+            session['accType'] = gubbins[3]
             return redirect(url_for("accounting"))
     return render_template("login.html")
 
@@ -497,40 +524,45 @@ def accounting():
                     cursor.execute(toQuery)
                     db.commit()
                     cursor.close()
-                    return render_template("accounts.html", dets=accDats, notif="Transfer Complete")
+                    return render_template("accounts.html", dets=accDats, sucNotif="Transfer Complete")
                 elif fromCheck == True and toCheck == False:
                     if toAccount[2] == 1:
-                        transBal = transBal * (1-(rates["transact"]/10))
-                        rishiBal = transBal * (rates["transact"]/10)
+                        transBal = transBal * (1-(rates["transact"]/100))
+                        rishiBal = transBal * (rates["transact"]/100)
                         rishiURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/292953664492929025"
                         rishiJ = {"cash" : rishiBal, "bank": 0}
                         requests.patch(rishiURL, headers=authParams, json=rishiJ)
+                    usrBal = (0-float(transBal))
                     fromURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/"+str(discID)
                     transBal = (0-int(transBal))
-                    fromJSON = {"cash": 0, "bank": str(transBal)}
+                    fromJSON = {"cash": 0, "bank": str(usrBal)}
                     toBal = (float(toBal)-float(transBal))
                     toQuery = "UPDATE accounts SET balance = '"+str(toBal)+"' WHERE accID = '"+str(toAccount[0])+"';"
                     requests.patch(fromURL, headers=authParams, json=fromJSON)
                     cursor.execute(toQuery)
                     db.commit()
                     cursor.close()
-                    return render_template("accounts.html", dets=accDats, notif="Transfer Complete")
+                    return render_template("accounts.html", dets=accDats, sucNotif="Transfer Complete")
                 elif fromCheck == False and toCheck == True:
                     if fromAccount[2] == 1:
-                        transBal = transBal * (1-(rates["transact"]/10))
-                        rishiBal = transBal * (rates["transact"]/10)
+                        transBal = transBal * (1-(rates["transact"]/100))
+                        rishiBal = transBal * (rates["transact"]/100)
                         rishiURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/292953664492929025"
                         rishiJ = {"cash" : rishiBal, "bank": 0}
+                        requests.patch(rishiURL, headers=autParams, json=rishiJ)
+                    else:
+                        accBalChan = transBal
+                        toBal = transBal
                     toURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/"+str(discID)
                     toJSON = {"cash": 0, "bank": transBal}
-                    fromBal = (toBal-transBal)
+                    fromBal = (float(fromBal)-float(accBalChan))
                     fromQuery = "UPDATE accounts SET balance = '"+str(fromBal)+"' WHERE accID = '"+str(accID)+"';"
                     requests.patch(toURL, headers=authParams, json=toJSON)
                     requests.patch(rishiURL, headers=authParams, json=rishiJ)
                     cursor.execute(toQuery)
                     db.commit()
                     cursor.close()
-                    return render_template("accounts.html", dets=accDats, notif="Transfer Complete")
+                    return render_template("accounts.html", dets=accDats, sucNotif="Transfer Complete")
                 else:
                     return render_template("accounts.html", dets=accDats, failNotif="Can not transfer between your own personal account")
         elif "delete" in formGuff:
@@ -548,6 +580,36 @@ def accounting():
                 return render_template("accounts.html", dets=accDats, notif=str(accDel)+" deleted.")
     return render_template("accounts.html", dets=accDats)
 
+@app.route('/accountSearch', methods=['GET', 'POST'])
+def accSearch():
+    if request.method == "POST":
+        data = request.form
+        uName = data["searchTerm"]
+        if 'adminP' in session:
+            query = query = "SELECT accounts.accName, accounts.balance, accounts.offshore, accounts.offshore FROM users, accounts WHERE accounts.uID = users.uID AND users.uName = '"+str(uName)+"';"
+        else:
+            query = "SELECT accounts.accName, accounts.balance, accounts.offshore, accounts.offshore FROM users, accounts WHERE accounts.uID = users.uID AND users.uName = '"+str(uName)+"' AND accounts.offshore = '0';"
+        with db.cursor() as cursor:
+            cursor.execute(query)
+            accts = cursor.fetchall()
+            if len(accts) == 0:
+                return render_template("accountSearch.html")
+            nuAccts = []
+            for acct in accts:
+                nuacct = []
+                nuacct.append(acct[0])
+                nuacct.append(acct[1])
+                if acct[2] == 0:
+                    nuacct.append("Local")
+                else:
+                    nuacct.append("Offshore")
+                if acct[3] == 1:
+                    nuacct.append("Yes!")
+                else:
+                    nuacct.append("No")
+                nuAccts.append(nuacct)
+        return render_template("accountSearch.html", accts=nuAccts)
+    return render_template("accountSearch.html")
 
 @app.route('/adLogin', methods=['GET', 'POST']) ##DONE FOR NOW
 def adminlogin():
@@ -582,6 +644,12 @@ def adminlogin():
 def adminPans():
     if 'adminP' not in session:
         return redirect(url_for("adminlogin"))
+    with db.cursor() as cursor:
+        query = "SELECT SUM(balance) FROM accounts WHERE offshore = 1;"
+        cursor.execute(query)
+        funcGubbins = cursor.fetchone()
+        funcGubbins = round(funcGubbins[0], 2)
+        cursor.close()
     if request.method == "POST":
         data = request.form
         if 'addU' in data:
@@ -591,33 +659,39 @@ def adminPans():
             discID = data["discID"]
             if uLevel == "Admin":
                 uInt = "1"
+            elif uLevel == "Corporate":
+                uInt = "2"
             else:
                 uInt = "0"
             with db.cursor() as cursor:
                 query = "INSERT INTO users (uName, pWord, discID, perms) VALUES ('"+str(uName)+"', '"+str(pWord)+"', '"+str(discID)+"', '"+uInt+"');"
                 query2 = "SELECT uID FROM users WHERE uNAME = %s;"
                 cursor.execute(query)
-                db.commit()
                 cursor.execute(query2, uName)
                 pew = cursor.fetchone()
+                if uLevel == "Corporate":
+                    queryCorp = "INSERT INTO accounts (uID, accName, balance, offshore, frozen) VALUES ('"+str(pew[0])+"', '"+str(uName)+"', '0', '0', '0');"
+                    cursor.execute(queryCorp)
+                db.commit()
                 cursor.close()
                 print(pew)
             message = "User "+str(uName)+" added with ID "+str(pew[0])+"."
-            return render_template("admin.html", mess=message)
+            return render_template("admin.html", mess=message, funcGubbins=funcGubbins)
         elif 'remUser' in data:
             uID = data["uID"]
             valQuery = "SELECT uName FROM users WHERE uID = '"+str(uID)+"';"
             actQuery = "DELETE FROM users WHERE uID = '"+str(uID)+"';"
+
             with db.cursor() as cursor:
                 cursor.execute(valQuery)
                 validate = cursor.fetchall()
                 if not validate:
-                    return render_template("admin.html", errMess="User Not Found. Please Check the User ID and Try Again.")
+                    return render_template("admin.html", errMess="User Not Found. Please Check the User ID and Try Again.", funcGubbins=funcGubbins)
                 cursor.execute(actQuery)
                 db.commit()
                 cursor.close()
                 message = "User "+str(uID)+" removed."
-                return render_template("admin.html", mess=message)
+                return render_template("admin.html", mess=message, funcGubbins=funcGubbins)
         elif 'changePass' in data:
             uID = data['uID']
             newPWord = data['newPWord']
@@ -632,7 +706,7 @@ def adminPans():
                 db.commit()
                 cursor.close()
                 message = str(uID)+" password succesfully changed."
-                return render_template("admin.html", mess=message)
+                return render_template("admin.html", mess=message, funcGubbins=funcGubbins)
         elif 'tickerAdd' in data:
             print(data)
             new = data['newTick']
@@ -646,7 +720,7 @@ def adminPans():
                 cursor.execute(findQuery)
                 validateMe = cursor.fetchall()
                 if validateMe:
-                    return render_template("admin.html", errMess="Stock Already Exists")
+                    return render_template("admin.html", errMess="Stock Already Exists", funcGubbins=funcGubbins)
                 cursor.execute(addQuery)
                 db.commit()
                 cursor.close()
@@ -659,7 +733,7 @@ def adminPans():
                 cursor.execute(findQuery)
                 validateMe = cursor.fetchall()
                 if not validateMe:
-                    return render_template("admin.html", errMess="Stock not listed")
+                    return render_template("admin.html", errMess="Stock not listed", funcGubbins=funcGubbins)
                 db.execute(delStockQuery)
                 db.commit()
                 cursor.close()
@@ -684,7 +758,7 @@ def adminPans():
                 db.commit()
                 cursor.close()
                 mess = str(ticker)+" changed in price by "+str(percentChange)+"% to price £"+str(newPrice)+"."
-                return render_template("admin.html", mess=mess)
+                return render_template("admin.html", mess=mess, funcGubbins=funcGubbins)
         elif 'freezerAcc' in data:
             accName = data["accName"]
             with db.cursor() as cursor:
@@ -699,7 +773,7 @@ def adminPans():
                 cursor.execute(transitionQuery)
                 db.commit()
                 cursor.close()
-                return render_template("admin.html", mess="Account succesfully frozen")
+                return render_template("admin.html", mess="Account succesfully frozen", funcGubbins=funcGubbins)
         elif 'defrostAcc' in data:
             accName = data["accName"]
             with db.cursor() as cursor:
@@ -715,7 +789,28 @@ def adminPans():
                 db.commit()
                 cursor.close()
                 return render_template("admin.html", mess="Account succesfully defrosted")
-    return render_template("admin.html")
+        elif "threshChange" in data:
+            tick = data["ticker"]
+            upRate = data["uprate"]
+            downRate = data["downrate"]
+            query1 = "SELECT ticker FROM stocks WHERE ticker = '"+str(tick)+"';"
+            with db.cursor() as cursor:
+                cursor.execute(query1)
+                check = cursor.fetchall()
+                if not check:
+                    return render_template("admin.html", errMess="Stock doesn't exist", funcGubbins=funcGubbins)
+                queryUp = "UPDATE stocks SET upRate = '"+str(upRate)+"' WHERE ticker = '"+str(tick)+"';"
+                queryDown = "UPDATE stocks SET downRate = '"+str(downRate)+"' WHERE ticker = '"+str(tick)+"';"
+                cursor.execute(queryUp)
+                cursor.execute(queryDown)
+                db.commit()
+                return render_template("admin.html", mess="Change Succesfull", funcGubbins=funcGubbins)
+    return render_template("admin.html", funcGubbins=funcGubbins)
+
+@app.route('/logout')
+def logout():
+    [session.pop(key) for key in list(session.keys())]
+    return redirect(url_for("home"))
 
 if __name__ == '__main__':
     app.run(debug=True)

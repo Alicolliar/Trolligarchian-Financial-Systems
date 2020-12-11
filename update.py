@@ -1,14 +1,16 @@
 def priceMoves():
     threading.Timer(600.0, priceMoves).start()
-    findQuery = "SELECT ticker, curPrice FROM stocks;"
+    findQuery = "SELECT ticker, curPrice, upRate, downRate FROM stocks;"
     with db.cursor() as cursor:
         cursor.execute(findQuery)
         tickers = cursor.fetchall()
         for dat in tickers:
             tick = dat[0]
             curPrice = dat[1]
-            downPrice = (curPrice * 0.95)
-            upPrice = (curPrice * 1.05)
+            uprate = (1+float(dat[2]))
+            downrate = (1-float(dat[3]))
+            downPrice = (curPrice * downrate)
+            upPrice = (curPrice * uprate)
             newPrice = uniform(downPrice, upPrice)
             print(newPrice)
             now = datetime.now()

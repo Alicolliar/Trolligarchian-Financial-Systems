@@ -1,0 +1,25 @@
+{% extends "template.html" %}
+{% block content %}
+<title>Trolligarchian Stock Market - Account Search</title>
+<h2>Local Account Search</h2>
+<div class="block">
+  <form method="POST">
+    <h4>Enter a username to view local accounts</h4><br>
+    <input type="text" name="searchTerm" required><br>
+    <input type="submit" value="Find Accounts" class="button is-link"><br>
+  </form>
+  {% if accts %}
+    {% for acct in accts %}
+      <div class="box is-multiline">
+        <p>Account Name: {{acct[0]}}<br>
+        Balance: {{acct[1]}}<br>
+        Type: {{acct[2]}}<br>
+        Frozen: {{acct[3]}}<br></p>
+      </div>
+    {% endfor %}
+      <br><br>
+  {% else %}
+    <h5>This user doesn't have any accounts</h5>
+  {% endif %}
+</div>
+{% endblock %}

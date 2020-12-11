@@ -57,8 +57,8 @@
     {% for det in dets %}
     <div class="box is-multiline">
       <p>Account Name: {{det[0]}}</p><br>
-      <p>Account Location: {{det[1]}}</p><br>
-      <p>Account Balance: <b>{{det[2]}}</b></p>
+      <p>Account Balance: {{det[1]}}</p><br>
+      <p>Account Location: <b>{{det[2]}}</b></p>
     </div>
     {% endfor %}
     {% else %}
