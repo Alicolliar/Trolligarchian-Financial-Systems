@@ -3,7 +3,7 @@
 
 #### Current Version: 3.2.1
 ## Overview
-This was a follow-up to the other one. Except this is better in every single way. Find it here: http://troligarchmarkets.ga
+This was a follow-up to the other one. Except this is better in every single way. Find it here: http://troligarchmarkets.ga (The site was shut down in January/February 2021, due to an issue which overshot the running costs. That link does not work anymore)
 
 The stylesheets are done through Bluma, which is why they look so... not utterly junk. The database is MySQL which is far, far, far better than csves.
 
