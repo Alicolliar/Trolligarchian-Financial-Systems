@@ -104,7 +104,6 @@ def stocklogin():
             cursor.execute(query, uname)
             db.commit()
             gubbins = cursor.fetchone()
-            cursor.close()
             print(gubbins)
         if not gubbins:
             return render_template("login.html", errMess="Incorrect Username, please try again")
@@ -130,92 +129,91 @@ def trading():
         accType = session['accType']
         rishiURL = "https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/292953664492929025"
         runningURL = ("https://unbelievaboat.com/api/v1/guilds/560525317429526539/users/"+str(discID))
-        cursor = db.cursor()
-        query1 = "SELECT curPrice, tradeableVolume, totalVolume FROM stocks WHERE ticker = %s"
-        query15 = "SELECT hID, quant FROM holdings WHERE ticker = '"+str(stock)+"' AND uID = "+str(uName)+";"
-        cursor.execute(query1, stock)
-        price = cursor.fetchone()
-        cursor.execute(query15)
-        help = cursor.fetchone()
-        if not price:
-            note = "No stock with that ticker."
-            return render_template("stocks/tradePage.html", notif=note)
-        if type == "Buy":
-            if float(price[1]) < float(quant):
-                note = "Volume is too low."
+        with db.cursor() as cursor:
+            query1 = "SELECT curPrice, tradeableVolume, totalVolume FROM stocks WHERE ticker = %s"
+            query15 = "SELECT hID, quant FROM holdings WHERE ticker = '"+str(stock)+"' AND uID = "+str(uName)+";"
+            cursor.execute(query1, stock)
+            price = cursor.fetchone()
+            cursor.execute(query15)
+            help = cursor.fetchone()
+            if not price:
+                note = "No stock with that ticker."
                 return render_template("stocks/tradePage.html", notif=note)
-            preVAT = float(price[0]) * float(quant)
-            postVAT = round(preVAT * (1+(rates["capGainTax"]/10)), 2)
-            vat = round((preVAT*(rates["transact"]/10)), 0)
-            if accType != 2:
-                yourBal = requests.get(runningURL, headers=authParams)
-                yourBal = yourBal.json()
-                bal = yourBal['total']
-                if postVAT > bal:
-                    return render_template("tradePage.html", notif="You do not have the requisite balance. Please select a different volume.")
-            priceforFire = (0-postVAT)
-            dataRish = {'cash': vat, 'bank': 0}
-            data1 = {'cash': 0, 'bank': priceforFire}
-            newVol = int(price[1]) - int(quant)
-            priceAdj = int(price[0])*(int(quant)/int(price[2]))
-            newPrice = price[0] + priceAdj
-            if help:
-                updatQuant = int(quant)+int(help[1])
-                query4 = "UPDATE holdings SET quant = "+str(updatQuant)+" WHERE hID = "+str(help[0])+";"
-            else:
-                query4 = "INSERT INTO holdings (uID, ticker, quant) VALUES('"+str(uName)+"', '"+str(stock)+"', "+str(quant)+");"
-            query2 = "INSERT INTO orders (uID, ticker, price, numStock, priceperVAT, totalPrice, orderType) VALUES ('"+str(uName)+"', '"+stock+"', '"+str(price[0])+"', '"+quant+"', '"+str(preVAT)+"', '"+str(postVAT)+"', 'Buy');"
-            query3 = "UPDATE stocks SET tradeableVolume = "+str(newVol)+", curPrice = "+str(newPrice)+" WHERE ticker = '"+stock+"';"
-            notification = (str(uName)+" has purchased "+str(quant)+" of "+stock+" at £"+str(price[0])+" giving a total of £"+str(postVAT)+", including all tax.")
-            rishi = requests.patch(rishiURL, headers=authParams, json=dataRish)
-        else:
-            if float(quant) > float(price[1]):
-                note = "Volume is too high."
-                return render_template("stocks/tradePage.html", notif=note)
-            if int(help[1]) < int(quant):
-                notif = "You don't own this many stock."
-                return render_template("stocks/tradePage.html", notif=notif)
-            preVAT = float(price[0]) * float(quant)
-            postVAT = round((preVAT * 1.05), 2)
-            vat = 1*round((preVAT*0.05), 0)
-            priceforFire = (postVAT)
-            dataRish = {'cash': vat, 'bank': 0}
-            data1 = {'cash': 0, 'bank': priceforFire}
-            newVol = int(price[1]) + int(quant)
-            priceAdj = int(price[0])*(int(quant)/int(price[2]))
-            newPrice = price[0] - priceAdj
-            updatQuant = int(help[1])-int(quant)
-            if updatQuant > 0:
-                query4 = "UPDATE holdings SET quant = "+str(updatQuant)+" WHERE hID = "+str(help[0])+";"
-            else:
-                query4 = "DELETE FROM holdings WHERE hID = "+str(help[0])+";"
-            query2 = "INSERT INTO orders (uID, ticker, price, numStock, priceperVAT, totalPrice, orderType) VALUES ('"+str(uName)+"', '"+stock+"', '"+str(price[0])+"', '"+quant+"', '"+str(preVAT)+"', '"+str(postVAT)+"', 'Sell');"
-            query3 = "UPDATE stocks SET tradeableVolume = "+str(newVol)+", curPrice = "+str(newPrice)+" WHERE ticker = '"+stock+"';"
-            notification = str(uName)+" has sold "+str(quant)+" of "+stock+" at £"+str(price[0])+" giving a total of £"+str(postVAT)+", including all tax."
-            rishi = requests.patch(rishiURL, headers=authParams, json=dataRish)
-        cursor.execute(query2)
-        cursor.execute(query3)
-        cursor.execute(query4)
-        print(uName)
-        if accType != 2:
-            running = requests.patch(runningURL, headers=authParams, json=data1)
-        else:
-            accFindQ = "SELECT accID, balance, frozen FROM accounts WHERE uID = '"+str(uName)+"';"
-            cursor.execute(accFindQ)
-            account = cursor.fetchone()
-            print(account)
-            if account[2] == 1:
-                return render_template("stocks/tradePage.html", notif="Account frozen")
             if type == "Buy":
-                newBal = account[1] - float(postVAT)
+                if float(price[1]) < float(quant):
+                    note = "Volume is too low."
+                    return render_template("stocks/tradePage.html", notif=note)
+                preVAT = float(price[0]) * float(quant)
+                postVAT = round(preVAT * (1+(rates["capGainTax"]/10)), 2)
+                vat = round((preVAT*(rates["transact"]/10)), 0)
+                if accType != 2:
+                    yourBal = requests.get(runningURL, headers=authParams)
+                    yourBal = yourBal.json()
+                    bal = yourBal['total']
+                    if postVAT > bal:
+                        return render_template("tradePage.html", notif="You do not have the requisite balance. Please select a different volume.")
+                priceforFire = (0-postVAT)
+                dataRish = {'cash': vat, 'bank': 0}
+                data1 = {'cash': 0, 'bank': priceforFire}
+                newVol = int(price[1]) - int(quant)
+                priceAdj = int(price[0])*(int(quant)/int(price[2]))
+                newPrice = price[0] + priceAdj
+                if help:
+                    updatQuant = int(quant)+int(help[1])
+                    query4 = "UPDATE holdings SET quant = "+str(updatQuant)+" WHERE hID = "+str(help[0])+";"
+                else:
+                    query4 = "INSERT INTO holdings (uID, ticker, quant) VALUES('"+str(uName)+"', '"+str(stock)+"', "+str(quant)+");"
+                query2 = "INSERT INTO orders (uID, ticker, price, numStock, priceperVAT, totalPrice, orderType) VALUES ('"+str(uName)+"', '"+stock+"', '"+str(price[0])+"', '"+quant+"', '"+str(preVAT)+"', '"+str(postVAT)+"', 'Buy');"
+                query3 = "UPDATE stocks SET tradeableVolume = "+str(newVol)+", curPrice = "+str(newPrice)+" WHERE ticker = '"+stock+"';"
+                notification = (str(uName)+" has purchased "+str(quant)+" of "+stock+" at £"+str(price[0])+" giving a total of £"+str(postVAT)+", including all tax.")
+                rishi = requests.patch(rishiURL, headers=authParams, json=dataRish)
             else:
-                newBal = account[1] + float(postVAT)
-            if newBal < 0:
-                return render_template("stocks/tradePage.html", notif="You do not have the requisite balance.")
-            balUpdateQuery = "UPDATE accounts SET balance = '"+str(newBal)+"' WHERE accID = '"+str(account[0])+"';"
-            cursor.execute(balUpdateQuery)
+                if float(quant) > float(price[1]):
+                    note = "Volume is too high."
+                    return render_template("stocks/tradePage.html", notif=note)
+                if int(help[1]) < int(quant):
+                    notif = "You don't own this many stock."
+                    return render_template("stocks/tradePage.html", notif=notif)
+                preVAT = float(price[0]) * float(quant)
+                postVAT = round((preVAT * 1.05), 2)
+                vat = 1*round((preVAT*0.05), 0)
+                priceforFire = (postVAT)
+                dataRish = {'cash': vat, 'bank': 0}
+                data1 = {'cash': 0, 'bank': priceforFire}
+                newVol = int(price[1]) + int(quant)
+                priceAdj = int(price[0])*(int(quant)/int(price[2]))
+                newPrice = price[0] - priceAdj
+                updatQuant = int(help[1])-int(quant)
+                if updatQuant > 0:
+                    query4 = "UPDATE holdings SET quant = "+str(updatQuant)+" WHERE hID = "+str(help[0])+";"
+                else:
+                    query4 = "DELETE FROM holdings WHERE hID = "+str(help[0])+";"
+                query2 = "INSERT INTO orders (uID, ticker, price, numStock, priceperVAT, totalPrice, orderType) VALUES ('"+str(uName)+"', '"+stock+"', '"+str(price[0])+"', '"+quant+"', '"+str(preVAT)+"', '"+str(postVAT)+"', 'Sell');"
+                query3 = "UPDATE stocks SET tradeableVolume = "+str(newVol)+", curPrice = "+str(newPrice)+" WHERE ticker = '"+stock+"';"
+                notification = str(uName)+" has sold "+str(quant)+" of "+stock+" at £"+str(price[0])+" giving a total of £"+str(postVAT)+", including all tax."
+                rishi = requests.patch(rishiURL, headers=authParams, json=dataRish)
+            cursor.execute(query2)
+            cursor.execute(query3)
+            cursor.execute(query4)
+            print(uName)
+            if accType != 2:
+                running = requests.patch(runningURL, headers=authParams, json=data1)
+            else:
+                accFindQ = "SELECT accID, balance, frozen FROM accounts WHERE uID = '"+str(uName)+"';"
+                cursor.execute(accFindQ)
+                account = cursor.fetchone()
+                print(account)
+                if account[2] == 1:
+                    return render_template("stocks/tradePage.html", notif="Account frozen")
+                if type == "Buy":
+                    newBal = account[1] - float(postVAT)
+                else:
+                    newBal = account[1] + float(postVAT)
+                if newBal < 0:
+                    return render_template("stocks/tradePage.html", notif="You do not have the requisite balance.")
+                balUpdateQuery = "UPDATE accounts SET balance = '"+str(newBal)+"' WHERE accID = '"+str(account[0])+"';"
+                cursor.execute(balUpdateQuery)
         db.commit()
-        cursor.close()
         return render_template("stocks/tradePage.html", notif=notification)
     return render_template("stocks/tradePage.html")
 

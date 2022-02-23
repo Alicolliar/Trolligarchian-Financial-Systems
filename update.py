@@ -20,5 +20,4 @@ def priceMoves():
             recordQuery = "INSERT INTO pricemoves (ticker ,timeStamped, newPrice) VALUES ('"+str(tick)+"','"+str(dt_string)+"', '"+str(newPrice)+"');"
             cursor.execute(updateQuery)
             cursor.execute(recordQuery)
-            cursor.close()
         db.commit()
